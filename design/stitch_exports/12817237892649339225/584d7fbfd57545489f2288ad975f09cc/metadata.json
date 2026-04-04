@@ -1,0 +1,27 @@
+{
+  "project_id": "12817237892649339225",
+  "screen_id": "584d7fbfd57545489f2288ad975f09cc",
+  "mode": "weekday_commute_now",
+  "title": "Refined Weekday Mobility Ledger",
+  "model_id": "GEMINI_3_1_PRO",
+  "source_screen_id": "650d701bb4d245e38214ac67903a07dd",
+  "file_handles": {
+    "screenshot": "projects/12817237892649339225/files/b267e869dc854f77b6b4d17878d1c2fa",
+    "html": "projects/12817237892649339225/files/e0b2d668b59f4727a4c2385b13401ec9"
+  },
+  "artifact_paths": {
+    "screenshot": "design/stitch_exports/12817237892649339225/584d7fbfd57545489f2288ad975f09cc/screenshot.png",
+    "html": "design/stitch_exports/12817237892649339225/584d7fbfd57545489f2288ad975f09cc/screen.html"
+  },
+  "layout": {
+    "columns": [250, 760, 350],
+    "headline_rows": 6,
+    "departure_rows_below_hero": 3
+  },
+  "status": "refined_source_of_truth",
+  "notes": [
+    "Preserve the weekday rail and hero proportions from the Stitch export.",
+    "Strip non-functional ledger chrome from the right rail during renderer adaptation.",
+    "Use local icon assets and real headline content only."
+  ]
+}

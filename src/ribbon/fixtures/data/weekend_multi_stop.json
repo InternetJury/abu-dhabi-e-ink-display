@@ -1,0 +1,134 @@
+{
+  "raw": {
+    "bus": {
+      "00513B": [
+        {"line": "24", "direction": "Central Terminal", "expected_iso": "2026-04-11T10:05:00+04:00", "scheduled_iso": "2026-04-11T10:05:00+04:00", "due_minutes": 5, "isRealtime": true},
+        {"line": "54", "direction": "Corniche Hospital", "expected_iso": "2026-04-11T10:18:00+04:00", "scheduled_iso": "2026-04-11T10:18:00+04:00", "due_minutes": 18, "isRealtime": false},
+        {"line": "24", "direction": "Central Terminal", "expected_iso": "2026-04-11T10:31:00+04:00", "scheduled_iso": "2026-04-11T10:31:00+04:00", "due_minutes": 31, "isRealtime": true},
+        {"line": "94", "direction": "Madinat Zayed", "expected_iso": "2026-04-11T10:44:00+04:00", "scheduled_iso": "2026-04-11T10:44:00+04:00", "due_minutes": 44, "isRealtime": false}
+      ],
+      "00512A": [
+        {"line": "63", "direction": "Khalidiya", "expected_iso": "2026-04-11T10:03:00+04:00", "scheduled_iso": "2026-04-11T10:03:00+04:00", "due_minutes": 3, "isRealtime": true},
+        {"line": "63", "direction": "Khalidiya", "expected_iso": "2026-04-11T10:21:00+04:00", "scheduled_iso": "2026-04-11T10:21:00+04:00", "due_minutes": 21, "isRealtime": false},
+        {"line": "63", "direction": "Khalidiya", "expected_iso": "2026-04-11T10:39:00+04:00", "scheduled_iso": "2026-04-11T10:39:00+04:00", "due_minutes": 39, "isRealtime": true},
+        {"line": "10", "direction": "Central Bus Station", "expected_iso": "2026-04-11T10:54:00+04:00", "scheduled_iso": "2026-04-11T10:54:00+04:00", "due_minutes": 54, "isRealtime": false}
+      ],
+      "00303B": [
+        {"line": "7", "direction": "Marina Mall", "expected_iso": "2026-04-11T10:07:00+04:00", "scheduled_iso": "2026-04-11T10:07:00+04:00", "due_minutes": 7, "isRealtime": true},
+        {"line": "7", "direction": "Marina Mall", "expected_iso": "2026-04-11T10:22:00+04:00", "scheduled_iso": "2026-04-11T10:22:00+04:00", "due_minutes": 22, "isRealtime": false},
+        {"line": "7", "direction": "Marina Mall", "expected_iso": "2026-04-11T10:37:00+04:00", "scheduled_iso": "2026-04-11T10:37:00+04:00", "due_minutes": 37, "isRealtime": true},
+        {"line": "34", "direction": "Corniche East", "expected_iso": "2026-04-11T10:53:00+04:00", "scheduled_iso": "2026-04-11T10:53:00+04:00", "due_minutes": 53, "isRealtime": false}
+      ],
+      "00303A": [
+        {"line": "7", "direction": "World Trade Center", "expected_iso": "2026-04-11T10:11:00+04:00", "scheduled_iso": "2026-04-11T10:11:00+04:00", "due_minutes": 11, "isRealtime": true},
+        {"line": "56", "direction": "Airport Road", "expected_iso": "2026-04-11T10:31:00+04:00", "scheduled_iso": "2026-04-11T10:28:00+04:00", "due_minutes": 31, "isRealtime": true, "delay_minutes": 3, "marker": "Delay +3m"},
+        {"line": "7", "direction": "World Trade Center", "expected_iso": "2026-04-11T10:46:00+04:00", "scheduled_iso": "2026-04-11T10:46:00+04:00", "due_minutes": 46, "isRealtime": false},
+        {"line": "56", "direction": "Airport Road", "expected_iso": "2026-04-11T10:59:00+04:00", "scheduled_iso": "2026-04-11T10:56:00+04:00", "due_minutes": 59, "isRealtime": true, "delay_minutes": 3, "marker": "Delay +3m"}
+      ]
+    }
+  },
+  "snapshot": {
+    "mode": "weekend_multi_stop",
+    "generated_at": "2026-04-11T10:00:00+04:00",
+    "timezone": "Asia/Dubai",
+    "refresh_hint": "full",
+    "weather": {
+      "location_label": "Abu Dhabi",
+      "temperature_c": 33.0,
+      "condition_label": "Clear",
+      "humidity_pct": 41,
+      "aqi_index": 44,
+      "aqi_label": "Good",
+      "sunrise_local": "2026-04-11T05:56:00+04:00",
+      "sunset_local": "2026-04-11T18:33:00+04:00",
+      "observed_at": "2026-04-11T10:00:00+04:00"
+    },
+    "headlines": [
+      {"title": "UAE condemns 'acts of vandalism' on its mission in Damascus", "source_name": "Reuters", "url": "https://www.reuters.com/", "published_at": "2026-04-11T09:20:00+04:00"},
+      {"title": "Debris from aerial interception strikes Oracle building in Dubai, UAE says", "source_name": "CNBC", "url": "https://www.cnbc.com/", "published_at": "2026-04-11T09:00:00+04:00"},
+      {"title": "India Sends 1,000 Metric Tonnes of Rice to Burkina Faso as Humanitarian Aid", "source_name": "News On AIR", "url": "https://newsonair.gov.in/", "published_at": "2026-04-11T08:40:00+04:00"},
+      {"title": "8 Indian Vessels Have Crossed Strait Of Hormuz, Among Highest In The World", "source_name": "NDTV", "url": "https://www.ndtv.com/", "published_at": "2026-04-11T08:20:00+04:00"},
+      {"title": "India makes first Iranian oil buy in seven years with no payment problems", "source_name": "Reuters", "url": "https://www.reuters.com/", "published_at": "2026-04-11T08:00:00+04:00"},
+      {"title": "Iran points finger at Saudis and UAE after Chinese-made drone was shot down", "source_name": "South China Morning Post", "url": "https://www.scmp.com/", "published_at": "2026-04-11T07:45:00+04:00"}
+    ],
+    "market_indices": [
+      {"code": "NIFTY", "label": "NIFTY", "percent_change": 0.22, "direction": "up", "observed_at": "2026-04-11T11:05:00+04:00"},
+      {"code": "SPX", "label": "S&P 500", "percent_change": 0.14, "direction": "up", "observed_at": "2026-04-11T00:05:00+04:00"}
+    ],
+    "primary_stop": null,
+    "multi_stop": {
+      "stops": [
+        {
+          "stop_id": "00513B",
+          "stop_title": "Aster Pharmacy",
+          "departures": [
+            {"stop_id": "00513B", "stop_title": "Aster Pharmacy", "route_number": "24", "destination": "Central Terminal", "scheduled_at": "2026-04-11T10:05:00+04:00", "expected_at": "2026-04-11T10:05:00+04:00", "due_minutes": 5, "is_live": true, "delay_minutes": 0, "marker": null, "source": "fixture"},
+            {"stop_id": "00513B", "stop_title": "Aster Pharmacy", "route_number": "54", "destination": "Corniche Hospital", "scheduled_at": "2026-04-11T10:18:00+04:00", "expected_at": "2026-04-11T10:18:00+04:00", "due_minutes": 18, "is_live": false, "delay_minutes": 0, "marker": null, "source": "fixture"},
+            {"stop_id": "00513B", "stop_title": "Aster Pharmacy", "route_number": "24", "destination": "Central Terminal", "scheduled_at": "2026-04-11T10:31:00+04:00", "expected_at": "2026-04-11T10:31:00+04:00", "due_minutes": 31, "is_live": true, "delay_minutes": 0, "marker": null, "source": "fixture"},
+            {"stop_id": "00513B", "stop_title": "Aster Pharmacy", "route_number": "94", "destination": "Madinat Zayed", "scheduled_at": "2026-04-11T10:44:00+04:00", "expected_at": "2026-04-11T10:44:00+04:00", "due_minutes": 44, "is_live": false, "delay_minutes": 0, "marker": null, "source": "fixture"}
+          ],
+          "hero": {"stop_id": "00513B", "route_number": "24", "destination": "Central Terminal", "due_label": "05 min", "scheduled_label": "10:05", "confidence_label": "live", "irregularity_flag": null},
+          "density_window": {"window_start": "2026-04-11T10:00:00+04:00", "window_end": "2026-04-11T11:00:00+04:00", "departures_count": 4, "routes_active": 3, "bins": [2, 1, 1, 0]},
+          "frequency_summaries": [{"route_number": "24", "departures_count": 2, "median_spacing_minutes": 26, "band": "sparse", "next_due_minutes": 5}],
+          "irregularity_summary": [],
+          "leave_by": {"walking_buffer_minutes": 5, "leave_by_at": "2026-04-11T10:00:00+04:00", "target_departure_at": "2026-04-11T10:05:00+04:00", "status": "leave_now"}
+        },
+        {
+          "stop_id": "00512A",
+          "stop_title": "UAE Exchange",
+          "departures": [
+            {"stop_id": "00512A", "stop_title": "UAE Exchange", "route_number": "63", "destination": "Khalidiya", "scheduled_at": "2026-04-11T10:03:00+04:00", "expected_at": "2026-04-11T10:03:00+04:00", "due_minutes": 3, "is_live": true, "delay_minutes": 0, "marker": null, "source": "fixture"},
+            {"stop_id": "00512A", "stop_title": "UAE Exchange", "route_number": "63", "destination": "Khalidiya", "scheduled_at": "2026-04-11T10:21:00+04:00", "expected_at": "2026-04-11T10:21:00+04:00", "due_minutes": 21, "is_live": false, "delay_minutes": 0, "marker": null, "source": "fixture"},
+            {"stop_id": "00512A", "stop_title": "UAE Exchange", "route_number": "63", "destination": "Khalidiya", "scheduled_at": "2026-04-11T10:39:00+04:00", "expected_at": "2026-04-11T10:39:00+04:00", "due_minutes": 39, "is_live": true, "delay_minutes": 0, "marker": null, "source": "fixture"},
+            {"stop_id": "00512A", "stop_title": "UAE Exchange", "route_number": "10", "destination": "Central Bus Station", "scheduled_at": "2026-04-11T10:54:00+04:00", "expected_at": "2026-04-11T10:54:00+04:00", "due_minutes": 54, "is_live": false, "delay_minutes": 0, "marker": null, "source": "fixture"}
+          ],
+          "hero": {"stop_id": "00512A", "route_number": "63", "destination": "Khalidiya", "due_label": "03 min", "scheduled_label": "10:03", "confidence_label": "live", "irregularity_flag": null},
+          "density_window": {"window_start": "2026-04-11T10:00:00+04:00", "window_end": "2026-04-11T11:00:00+04:00", "departures_count": 4, "routes_active": 2, "bins": [2, 1, 1, 0]},
+          "frequency_summaries": [{"route_number": "63", "departures_count": 3, "median_spacing_minutes": 18, "band": "moderate", "next_due_minutes": 3}],
+          "irregularity_summary": [],
+          "leave_by": {"walking_buffer_minutes": 5, "leave_by_at": "2026-04-11T09:58:00+04:00", "target_departure_at": "2026-04-11T10:03:00+04:00", "status": "leave_now"}
+        },
+        {
+          "stop_id": "00303B",
+          "stop_title": "WTC - To Marina",
+          "departures": [
+            {"stop_id": "00303B", "stop_title": "WTC - To Marina", "route_number": "7", "destination": "Marina Mall", "scheduled_at": "2026-04-11T10:07:00+04:00", "expected_at": "2026-04-11T10:07:00+04:00", "due_minutes": 7, "is_live": true, "delay_minutes": 0, "marker": null, "source": "fixture"},
+            {"stop_id": "00303B", "stop_title": "WTC - To Marina", "route_number": "7", "destination": "Marina Mall", "scheduled_at": "2026-04-11T10:22:00+04:00", "expected_at": "2026-04-11T10:22:00+04:00", "due_minutes": 22, "is_live": false, "delay_minutes": 0, "marker": null, "source": "fixture"},
+            {"stop_id": "00303B", "stop_title": "WTC - To Marina", "route_number": "7", "destination": "Marina Mall", "scheduled_at": "2026-04-11T10:37:00+04:00", "expected_at": "2026-04-11T10:37:00+04:00", "due_minutes": 37, "is_live": true, "delay_minutes": 0, "marker": null, "source": "fixture"},
+            {"stop_id": "00303B", "stop_title": "WTC - To Marina", "route_number": "34", "destination": "Corniche East", "scheduled_at": "2026-04-11T10:53:00+04:00", "expected_at": "2026-04-11T10:53:00+04:00", "due_minutes": 53, "is_live": false, "delay_minutes": 0, "marker": null, "source": "fixture"}
+          ],
+          "hero": {"stop_id": "00303B", "route_number": "7", "destination": "Marina Mall", "due_label": "07 min", "scheduled_label": "10:07", "confidence_label": "live", "irregularity_flag": null},
+          "density_window": {"window_start": "2026-04-11T10:00:00+04:00", "window_end": "2026-04-11T11:00:00+04:00", "departures_count": 4, "routes_active": 2, "bins": [2, 1, 1, 0]},
+          "frequency_summaries": [{"route_number": "7", "departures_count": 3, "median_spacing_minutes": 15, "band": "moderate", "next_due_minutes": 7}],
+          "irregularity_summary": [],
+          "leave_by": {"walking_buffer_minutes": 5, "leave_by_at": "2026-04-11T10:02:00+04:00", "target_departure_at": "2026-04-11T10:07:00+04:00", "status": "leave_soon"}
+        },
+        {
+          "stop_id": "00303A",
+          "stop_title": "WTC - From Marina",
+          "departures": [
+            {"stop_id": "00303A", "stop_title": "WTC - From Marina", "route_number": "7", "destination": "World Trade Center", "scheduled_at": "2026-04-11T10:11:00+04:00", "expected_at": "2026-04-11T10:11:00+04:00", "due_minutes": 11, "is_live": true, "delay_minutes": 0, "marker": null, "source": "fixture"},
+            {"stop_id": "00303A", "stop_title": "WTC - From Marina", "route_number": "56", "destination": "Airport Road", "scheduled_at": "2026-04-11T10:28:00+04:00", "expected_at": "2026-04-11T10:31:00+04:00", "due_minutes": 31, "is_live": true, "delay_minutes": 3, "marker": "Delay +3m", "source": "fixture"},
+            {"stop_id": "00303A", "stop_title": "WTC - From Marina", "route_number": "7", "destination": "World Trade Center", "scheduled_at": "2026-04-11T10:46:00+04:00", "expected_at": "2026-04-11T10:46:00+04:00", "due_minutes": 46, "is_live": false, "delay_minutes": 0, "marker": null, "source": "fixture"},
+            {"stop_id": "00303A", "stop_title": "WTC - From Marina", "route_number": "56", "destination": "Airport Road", "scheduled_at": "2026-04-11T10:56:00+04:00", "expected_at": "2026-04-11T10:59:00+04:00", "due_minutes": 59, "is_live": true, "delay_minutes": 3, "marker": "Delay +3m", "source": "fixture"}
+          ],
+          "hero": {"stop_id": "00303A", "route_number": "7", "destination": "World Trade Center", "due_label": "11 min", "scheduled_label": "10:11", "confidence_label": "live", "irregularity_flag": null},
+          "density_window": {"window_start": "2026-04-11T10:00:00+04:00", "window_end": "2026-04-11T11:00:00+04:00", "departures_count": 4, "routes_active": 2, "bins": [2, 1, 1, 0]},
+          "frequency_summaries": [{"route_number": "7", "departures_count": 2, "median_spacing_minutes": 35, "band": "sparse", "next_due_minutes": 11}],
+          "irregularity_summary": ["R56: Delay +3m"],
+          "leave_by": {"walking_buffer_minutes": 5, "leave_by_at": "2026-04-11T10:06:00+04:00", "target_departure_at": "2026-04-11T10:11:00+04:00", "status": "buffered"}
+        }
+      ]
+    },
+    "city_summary": {
+      "summary_line": "4/4 saved stops currently show upcoming service.",
+      "detail_lines": [
+        "Aster Pharmacy: 05 min",
+        "UAE Exchange: 03 min",
+        "WTC - To Marina: 07 min",
+        "WTC - From Marina: 11 min"
+      ]
+    },
+    "degraded_reason": null
+  }
+}

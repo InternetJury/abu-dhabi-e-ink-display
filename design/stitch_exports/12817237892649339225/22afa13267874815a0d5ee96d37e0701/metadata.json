@@ -1,0 +1,27 @@
+{
+  "project_id": "12817237892649339225",
+  "screen_id": "22afa13267874815a0d5ee96d37e0701",
+  "mode": "ambient_info",
+  "title": "Abu Dhabi Ambient Info (Final Production Refined)",
+  "model_id": "GEMINI_3_1_PRO",
+  "source_screen_id": "9f14d2ec4f39418794e6edde6db1c68c",
+  "file_handles": {
+    "screenshot": "projects/12817237892649339225/files/d1d485645264451bb93f687494303a4e",
+    "html": "projects/12817237892649339225/files/345f87586b724ed6af36ea06de032a52"
+  },
+  "artifact_paths": {
+    "screenshot": "design/stitch_exports/12817237892649339225/22afa13267874815a0d5ee96d37e0701/screenshot.png",
+    "html": "design/stitch_exports/12817237892649339225/22afa13267874815a0d5ee96d37e0701/screen.html"
+  },
+  "layout": {
+    "columns": [340, 1020],
+    "headline_rows": 6,
+    "summary_block": "compact"
+  },
+  "status": "refined_source_of_truth",
+  "notes": [
+    "Preserve the left rail and full-width headline stack from the Stitch export.",
+    "Ambient mode removes the leave-by block entirely.",
+    "Renderer adaptation favors one stacked editorial column over any headline grid."
+  ]
+}

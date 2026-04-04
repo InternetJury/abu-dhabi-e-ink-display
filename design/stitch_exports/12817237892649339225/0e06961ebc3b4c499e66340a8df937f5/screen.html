@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kinetic E-Ink Signage - Weekend Multi-Stop Mode</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&amp;family=Inter:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "background": "#ffffff",
+                        "primary": "#000000",
+                        "on-primary": "#ffffff",
+                        "surface": "#ffffff",
+                        "outline": "#000000"
+                    },
+                    "fontFamily": {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 1360px;
+            height: 480px;
+            color: #000000;
+        }
+        .e-ink-container {
+            width: 1360px;
+            height: 440px; /* 480px total - 40px footer */
+            display: grid;
+            grid-template-columns: repeat(4, 340px);
+            grid-template-rows: 1fr;
+        }
+        .stop-column {
+            border-right: 4px solid #000000;
+            height: 440px;
+            display: flex;
+            flex-direction: column;
+        }
+        .stop-column:last-child {
+            border-right: none;
+        }
+        .header {
+            height: 72px; /* Increased for better legibility */
+            background: #000000;
+            color: #ffffff;
+            padding: 0 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .departure-row {
+            height: 92px; /* (440 - 72) / 4 = 92px */
+            border-bottom: 2px solid #000000;
+            padding: 0 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .departure-row:last-child {
+            border-bottom: none;
+        }
+        .truncate-destination {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .footer {
+            height: 40px;
+            width: 1360px;
+            background: #000000;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            border-top: 4px solid #000000;
+        }
+    </style>
+</head>
+<body class="antialiased">
+<div class="e-ink-container">
+<!-- Column 1: 00513B Aster Pharmacy -->
+<div class="stop-column">
+<div class="header">
+<div class="font-headline font-bold text-[12px] tracking-[0.2em] leading-none opacity-90 uppercase">Stop ID: 00513B</div>
+<div class="font-headline font-black text-2xl uppercase leading-tight truncate">Aster Pharmacy</div>
+</div>
+<div class="departure-row">
+<div class="flex items-baseline justify-between">
+<span class="font-headline font-black text-5xl">X28</span>
+<span class="font-headline font-black text-3xl">04 MIN</span>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<span class="font-headline font-bold text-lg uppercase truncate-destination max-w-[200px]">Internet City</span>
+<span class="font-headline font-bold text-sm">08:50</span>
+</div>
+</div>
+<div class="departure-row">
+<div class="flex items-baseline justify-between">
+<span class="font-headline font-black text-5xl">81</span>
+<span class="font-headline font-black text-3xl">12 MIN</span>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<span class="font-headline font-bold text-lg uppercase truncate-destination max-w-[200px]">Mall of Emirates</span>
+<span class="font-headline font-bold text-sm">08:58</span>
+</div>
+</div>
+<div class="departure-row">
+<div class="flex items-baseline justify-between">
+<span class="font-headline font-black text-5xl">F55</span>
+<span class="font-headline font-black text-3xl">25 MIN</span>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<span class="font-headline font-bold text-lg uppercase truncate-destination max-w-[200px]">Expo 2020 Stn</span>
+<span class="font-headline font-bold text-sm">09:11</span>
+</div>
+</div>
+<div class="departure-row">
+<div class="flex items-baseline justify-between">
+<span class="font-headline font-black text-5xl">81</span>
+<span class="font-headline font-black text-3xl">42 MIN</span>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<span class="font-headline font-bold text-lg uppercase truncate-destination max-w-[200px]">Mall of Emirates</span>
+<span class="font-headline font-bold text-sm">09:28</span>
+</div>
+</div>
+</div>
+<!-- Column 2: 00512A UAE Exchange -->
+<div class="stop-column">
+<div class="header">
+<div class="font-headline font-bold text-[12px] tracking-[0.2em] leading-none opacity-90 uppercase">Stop ID: 00512A</div>
+<div class="font-headline font-black text-2xl uppercase leading-tight truncate">UAE Exchange</div>
+</div>
+<div class="departure-row">
+<div class="flex items-baseline justify-between">
+<span class="font-headline font-black text-5xl">09</span>
+<span class="font-headline font-black text-3xl">07 MIN</span>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<span class="font-headline font-bold text-lg uppercase truncate-destination max-w-[200px]">Business Bay</span>
+<span class="font-headline font-bold text-sm">08:53</span>
+</div>
+</div>
+<div class="departure-row">
+<div class="flex items-baseline justify-between">
+<span class="font-headline font-black text-5xl">C10</span>
+<span class="font-headline font-black text-3xl">18 MIN</span>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<span class="font-headline font-bold text-lg uppercase truncate-destination max-w-[200px]">Hamriya Port</span>
+<span class="font-headline font-bold text-sm">09:04</span>
+</div>
+</div>
+<div class="departure-row">
+<div class="flex items-baseline justify-between">
+<span class="font-headline font-black text-5xl">09</span>
+<span class="font-headline font-black text-3xl">35 MIN</span>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<span class="font-headline font-bold text-lg uppercase truncate-destination max-w-[200px]">Business Bay</span>
+<span class="font-headline font-bold text-sm">09:21</span>
+</div>
+</div>
+<div class="departure-row">
+<div class="flex items-baseline justify-between">
+<span class="font-headline font-black text-5xl">C10</span>
+<span class="font-headline font-black text-3xl">54 MIN</span>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<span class="font-headline font-bold text-lg uppercase truncate-destination max-w-[200px]">Hamriya Port</span>
+<span class="font-headline font-bold text-sm">09:40</span>
+</div>
+</div>
+</div>
+<!-- Column 3: 00303B WTC - To Marina -->
+<div class="stop-column">
+<div class="header">
+<div class="font-headline font-bold text-[12px] tracking-[0.2em] leading-none opacity-90 uppercase">Stop ID: 00303B</div>
+<div class="font-headline font-black text-2xl uppercase leading-tight truncate">WTC - To Marina</div>
+</div>
+<div class="departure-row">
+<div class="flex items-baseline justify-between">
+<span class="font-headline font-black text-5xl">F11</span>
+<span class="font-headline font-black text-3xl">02 MIN</span>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<span class="font-headline font-bold text-lg uppercase truncate-destination max-w-[200px]">Marina Mall</span>
+<span class="font-headline font-bold text-sm">08:48</span>
+</div>
+</div>
+<div class="departure-row">
+<div class="flex items-baseline justify-between">
+<span class="font-headline font-black text-5xl">X13</span>
+<span class="font-headline font-black text-3xl">25 MIN</span>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<span class="font-headline font-bold text-lg uppercase truncate-destination max-w-[200px]">JBR The Beach</span>
+<span class="font-headline font-bold text-sm">09:11</span>
+</div>
+</div>
+<div class="departure-row">
+<div class="flex items-baseline justify-between">
+<span class="font-headline font-black text-5xl">F11</span>
+<span class="font-headline font-black text-3xl">32 MIN</span>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<span class="font-headline font-bold text-lg uppercase truncate-destination max-w-[200px]">Marina Mall</span>
+<span class="font-headline font-bold text-sm">09:18</span>
+</div>
+</div>
+<div class="departure-row">
+<div class="flex items-baseline justify-between">
+<span class="font-headline font-black text-5xl">X13</span>
+<span class="font-headline font-black text-3xl">55 MIN</span>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<span class="font-headline font-bold text-lg uppercase truncate-destination max-w-[200px]">JBR The Beach</span>
+<span class="font-headline font-bold text-sm">09:41</span>
+</div>
+</div>
+</div>
+<!-- Column 4: 00303A WTC - From Marina -->
+<div class="stop-column">
+<div class="header">
+<div class="font-headline font-bold text-[12px] tracking-[0.2em] leading-none opacity-90 uppercase">Stop ID: 00303A</div>
+<div class="font-headline font-black text-2xl uppercase leading-tight truncate">WTC - From Marina</div>
+</div>
+<div class="departure-row">
+<div class="flex items-baseline justify-between">
+<span class="font-headline font-black text-5xl">21</span>
+<span class="font-headline font-black text-3xl">11 MIN</span>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<span class="font-headline font-bold text-lg uppercase truncate-destination max-w-[200px]">Al Ghubaiba Stn</span>
+<span class="font-headline font-bold text-sm">08:57</span>
+</div>
+</div>
+<div class="departure-row">
+<div class="flex items-baseline justify-between">
+<span class="font-headline font-black text-5xl">C01</span>
+<span class="font-headline font-black text-3xl">34 MIN</span>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<span class="font-headline font-bold text-lg uppercase truncate-destination max-w-[200px]">Deira City Ctr</span>
+<span class="font-headline font-bold text-sm">09:20</span>
+</div>
+</div>
+<div class="departure-row">
+<div class="flex items-baseline justify-between">
+<span class="font-headline font-black text-5xl">21</span>
+<span class="font-headline font-black text-3xl">41 MIN</span>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<span class="font-headline font-bold text-lg uppercase truncate-destination max-w-[200px]">Al Ghubaiba Stn</span>
+<span class="font-headline font-bold text-sm">09:27</span>
+</div>
+</div>
+<div class="departure-row">
+<div class="flex items-baseline justify-between">
+<span class="font-headline font-black text-5xl">C01</span>
+<span class="font-headline font-black text-3xl">64 MIN</span>
+</div>
+<div class="flex items-baseline justify-between mt-1">
+<span class="font-headline font-bold text-lg uppercase truncate-destination max-w-[200px]">Deira City Ctr</span>
+<span class="font-headline font-bold text-sm">09:50</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Full-width Footer -->
+<footer class="footer">
+<div class="font-headline font-black text-xl">08:46</div>
+<div class="font-headline font-bold text-lg tracking-widest uppercase">MON 24 OCT</div>
+<div class="flex items-center gap-2">
+<span class="font-headline font-black text-xl">24°C</span>
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1, 'wght' 700;">sunny</span>
+</div>
+</footer>
+</body></html>

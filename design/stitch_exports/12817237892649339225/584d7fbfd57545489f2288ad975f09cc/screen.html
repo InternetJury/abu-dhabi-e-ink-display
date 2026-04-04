@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Abu Dhabi Mobility Ribbon - E-Ink Refined</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Space+Grotesk:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#ffffff",
+                        "inverse-on-surface": "#ffffff",
+                        "on-tertiary-container": "#000000",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#000000",
+                        "on-primary": "#ffffff",
+                        "on-surface-variant": "#000000",
+                        "surface-tint": "#000000",
+                        "on-tertiary": "#000000",
+                        "background": "#ffffff",
+                        "on-background": "#000000",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed-variant": "#000000",
+                        "on-secondary-fixed": "#000000",
+                        "outline": "#000000",
+                        "on-secondary-container": "#000000",
+                        "inverse-surface": "#000000",
+                        "on-surface": "#000000",
+                        "surface-container-highest": "#e5e5e5",
+                        "outline-variant": "#000000",
+                        "inverse-primary": "#ffffff",
+                        "error": "#000000",
+                        "surface-container-low": "#ffffff",
+                        "surface-container-high": "#ffffff",
+                        "primary-fixed-dim": "#000000",
+                        "primary": "#000000",
+                        "error-container": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-container": "#ffffff",
+                        "surface-dim": "#ffffff",
+                        "primary-container": "#ffffff",
+                        "on-tertiary-fixed-variant": "#000000",
+                        "on-error-container": "#000000",
+                        "primary-fixed": "#000000",
+                        "tertiary-fixed-dim": "#000000",
+                        "secondary-fixed": "#000000",
+                        "on-primary-fixed": "#ffffff",
+                        "on-primary-container": "#000000",
+                        "secondary": "#000000",
+                        "tertiary": "#000000",
+                        "surface": "#ffffff",
+                        "tertiary-fixed": "#000000",
+                        "on-tertiary-fixed": "#ffffff",
+                        "on-secondary-fixed-variant": "#000000",
+                        "tertiary-container": "#ffffff",
+                        "surface-variant": "#ffffff",
+                        "surface-container": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0px",
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Space Grotesk"],
+                        "label": ["Space Grotesk"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Space Grotesk', sans-serif; background-color: #ffffff; color: #000000; overflow: hidden; }
+        .font-space { font-family: 'Space Grotesk', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 700, 'GRAD' 0, 'opsz' 24; }
+        .ledger-border-r { border-right: 2px solid #000000; }
+        .ledger-border-l { border-left: 2px solid #000000; }
+        .ledger-border-b { border-bottom: 2px solid #000000; }
+        .ledger-border-t { border-top: 2px solid #000000; }
+        .thick-divider { height: 4px; background-color: #000000; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-neutral-200">
+<!-- 1360x480 E-Ink Display Canvas -->
+<div class="w-[1360px] h-[480px] bg-white flex overflow-hidden shadow-2xl relative">
+<!-- LEFT RAIL: Pulse (250px) -->
+<aside class="w-[250px] flex flex-col ledger-border-r h-full p-6 bg-white z-10">
+<div class="flex flex-col h-full">
+<!-- Clock -->
+<div class="mb-10">
+<h1 class="text-7xl font-black font-space tracking-tighter leading-none">08:42</h1>
+<p class="text-2xl font-bold font-space uppercase mt-4">Mon 24 Oct</p>
+</div>
+<!-- Weather & Metrics -->
+<div class="space-y-6">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-4xl" data-icon="light_mode">light_mode</span>
+<span class="text-4xl font-space font-black">14°C</span>
+</div>
+<div class="space-y-3 pt-4 ledger-border-t">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-xl" data-icon="humidity_percentage">humidity_percentage</span>
+<span class="text-sm font-bold uppercase tracking-widest">Hum</span>
+</div>
+<span class="text-lg font-black">65%</span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-xl" data-icon="air">air</span>
+<span class="text-sm font-bold uppercase tracking-widest">AQI</span>
+</div>
+<span class="text-lg font-black">25 Good</span>
+</div>
+</div>
+<div class="pt-2 space-y-2">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-lg" data-icon="wb_sunny">wb_sunny</span>
+<span class="text-xs font-black uppercase tracking-widest">Rise 05:45</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-lg" data-icon="bedtime">bedtime</span>
+<span class="text-xs font-black uppercase tracking-widest">Set 18:30</span>
+</div>
+</div>
+</div>
+<!-- Footer Prompt -->
+<div class="mt-auto">
+<div class="bg-black text-white p-5 flex flex-col items-center">
+<span class="text-sm font-black tracking-[0.2em] mb-1">LEAVE BY</span>
+<span class="text-4xl font-space font-black leading-none">08:46</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- CENTER REGION: Focus (760px) -->
+<main class="w-[760px] flex flex-col h-full bg-white relative">
+<!-- Header Section -->
+<div class="px-8 pt-8 pb-4">
+<div class="flex justify-between items-baseline mb-2">
+<span class="text-sm font-black tracking-widest uppercase">Station Identifier</span>
+<span class="text-sm font-bold tracking-tight">ID: {{DATA:SCREEN:SCREEN_101}}</span>
+</div>
+<h2 class="text-4xl font-space font-black tracking-tighter uppercase leading-none">STOP 00513B / ASTER PHARMACY</h2>
+</div>
+<!-- Hero Block Departure -->
+<div class="px-8 py-8 flex items-start justify-between ledger-border-t ledger-border-b bg-white">
+<div class="flex items-center gap-12">
+<div class="flex flex-col">
+<span class="text-sm font-black uppercase tracking-widest mb-1">Route</span>
+<div class="text-9xl font-space font-black leading-none -ml-2">24</div>
+</div>
+<div class="flex flex-col pt-4">
+<span class="text-sm font-black uppercase tracking-widest mb-1">Destination</span>
+<div class="text-5xl font-space font-black tracking-tighter leading-none">CENTRAL TERMINAL</div>
+<div class="mt-5 flex items-center gap-3">
+<span class="material-symbols-outlined text-xl" data-icon="schedule">schedule</span>
+<span class="text-xl font-medium tracking-tight">Scheduled 08:50</span>
+</div>
+</div>
+</div>
+<div class="text-right">
+<span class="text-sm font-black uppercase tracking-widest mb-1">Due In</span>
+<div class="text-9xl font-space font-black leading-none tracking-tighter">04</div>
+<span class="text-3xl font-black uppercase block mt-1 tracking-widest">Min</span>
+</div>
+</div>
+<!-- Thick Divider -->
+<div class="thick-divider"></div>
+<!-- Secondary Departures List -->
+<div class="px-8 py-4 flex-grow overflow-hidden">
+<div class="grid grid-cols-1 divide-y-2 divide-black">
+<div class="flex items-center justify-between py-5">
+<div class="flex items-center gap-12">
+<span class="text-3xl font-black w-12">24</span>
+<span class="text-2xl font-black tracking-tight">CENTRAL TERMINAL</span>
+</div>
+<div class="flex items-center gap-10 text-right">
+<span class="text-xl font-bold">08:55</span>
+<span class="text-2xl font-black w-24">(13m)</span>
+</div>
+</div>
+<div class="flex items-center justify-between py-5">
+<div class="flex items-center gap-12">
+<span class="text-3xl font-black w-12">24</span>
+<span class="text-2xl font-black tracking-tight">CENTRAL TERMINAL</span>
+</div>
+<div class="flex items-center gap-10 text-right">
+<span class="text-xl font-bold">09:05</span>
+<span class="text-2xl font-black w-24">(23m)</span>
+</div>
+</div>
+<div class="flex items-center justify-between py-5">
+<div class="flex items-center gap-12">
+<span class="text-3xl font-black w-12">24</span>
+<span class="text-2xl font-black tracking-tight">CENTRAL TERMINAL</span>
+</div>
+<div class="flex items-center gap-10 text-right">
+<span class="text-xl font-bold">09:15</span>
+<span class="text-2xl font-black w-24">(33m)</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- RIGHT RAIL: News Column (350px) -->
+<aside class="w-[350px] ledger-border-l h-full p-8 flex flex-col bg-white">
+<div class="flex flex-col gap-6">
+<article class="ledger-border-b border-black pb-4">
+<h4 class="text-lg font-black leading-tight">At least one killed at UAE's Habshan gas facility during maintenance work</h4>
+</article>
+<article class="ledger-border-b border-black pb-4">
+<h4 class="text-lg font-black leading-tight">Italy's Meloni visits Saudi Arabia to strengthen energy and defense ties</h4>
+</article>
+<article class="ledger-border-b border-black pb-4">
+<h4 class="text-lg font-black leading-tight">ADNEC Group announces record growth in international event participation</h4>
+</article>
+<article class="ledger-border-b border-black pb-4">
+<h4 class="text-lg font-black leading-tight">New autonomous transport trials begin on Yas Island and Saadiyat Island</h4>
+</article>
+<article class="ledger-border-b border-black pb-4">
+<h4 class="text-lg font-black leading-tight">Dubai Financial Market hits five-year high amid regional investor optimism</h4>
+</article>
+<article class="ledger-border-b border-black pb-4">
+<h4 class="text-lg font-black leading-tight">COP28 legacy projects unveiled across UAE northern emirates</h4>
+</article>
+</div>
+</aside>
+</div>
+</body></html>

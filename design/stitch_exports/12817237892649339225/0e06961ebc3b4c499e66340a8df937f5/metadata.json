@@ -1,0 +1,28 @@
+{
+  "project_id": "12817237892649339225",
+  "screen_id": "0e06961ebc3b4c499e66340a8df937f5",
+  "mode": "weekend_multi_stop",
+  "title": "Production Weekend Multi-Stop Mode (Final)",
+  "model_id": "GEMINI_3_1_PRO",
+  "source_screen_id": "1e032c689ee94d66b0140ee20b47a512",
+  "file_handles": {
+    "screenshot": "projects/12817237892649339225/files/2c29624dc6d845ee986af5de0db4917a",
+    "html": "projects/12817237892649339225/files/1426cbf04d9c45dead4082c874340abd"
+  },
+  "artifact_paths": {
+    "screenshot": "design/stitch_exports/12817237892649339225/0e06961ebc3b4c499e66340a8df937f5/screenshot.png",
+    "html": "design/stitch_exports/12817237892649339225/0e06961ebc3b4c499e66340a8df937f5/screen.html"
+  },
+  "layout": {
+    "columns": [340, 340, 340, 340],
+    "column_header_height": 72,
+    "departure_rows_per_stop": 4,
+    "footer_height": 40
+  },
+  "status": "refined_source_of_truth",
+  "notes": [
+    "Preserve the 4-column strip and footer treatment from the Stitch export.",
+    "Renderer adaptation increases legibility while keeping four departures per stop visible.",
+    "Weekend mode remains headline-free."
+  ]
+}

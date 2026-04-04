@@ -1,0 +1,67 @@
+{
+  "raw": {
+    "bus": {
+      "00513B": [
+        {"line": "24", "direction": "Central Terminal", "expected_iso": "2026-04-07T14:08:00+04:00", "scheduled_iso": "2026-04-07T14:08:00+04:00", "due_minutes": 8, "isRealtime": true},
+        {"line": "54", "direction": "Corniche Hospital", "expected_iso": "2026-04-07T14:22:00+04:00", "scheduled_iso": "2026-04-07T14:22:00+04:00", "due_minutes": 22, "isRealtime": false}
+      ]
+    }
+  },
+  "snapshot": {
+    "mode": "ambient_info",
+    "generated_at": "2026-04-07T14:00:00+04:00",
+    "timezone": "Asia/Dubai",
+    "refresh_hint": "incremental",
+    "weather": {
+      "location_label": "Abu Dhabi",
+      "temperature_c": 39.0,
+      "daily_high_c": 42.0,
+      "daily_low_c": 29.0,
+      "condition_label": "Clear",
+      "humidity_pct": 29,
+      "aqi_index": 18,
+      "aqi_label": "Good",
+      "sunrise_local": "2026-04-07T05:59:00+04:00",
+      "sunset_local": "2026-04-07T18:31:00+04:00",
+      "observed_at": "2026-04-07T14:00:00+04:00"
+    },
+    "headlines": [
+      {"title": "UAE condemns 'acts of vandalism' on its mission in Damascus", "source_name": "Reuters", "url": "https://www.reuters.com/", "published_at": "2026-04-07T13:20:00+04:00"},
+      {"title": "The National reports Abu Dhabi emergency response review after overnight regional strikes", "source_name": "The National", "url": "https://www.thenationalnews.com/", "published_at": "2026-04-07T13:00:00+04:00"},
+      {"title": "WAM says UAE broadens civil aviation contingency planning across key hubs", "source_name": "WAM", "url": "https://www.wam.ae/", "published_at": "2026-04-07T12:40:00+04:00"},
+      {"title": "The Hindu says India mobilises fuel and shipping review after Gulf disruption", "source_name": "The Hindu", "url": "https://www.thehindu.com/", "published_at": "2026-04-07T12:10:00+04:00"},
+      {"title": "Indian Express reports New Delhi intensifies port and trade corridor monitoring", "source_name": "The Indian Express", "url": "https://indianexpress.com/", "published_at": "2026-04-07T11:55:00+04:00"},
+      {"title": "India makes first Iranian oil buy in seven years with no payment problems", "source_name": "Reuters", "url": "https://www.reuters.com/", "published_at": "2026-04-07T11:30:00+04:00"}
+    ],
+    "market_indices": [
+      {"code": "NIFTY", "label": "NIFTY", "current_value": 22801.7, "raw_change": 70.12, "percent_change": 0.31, "direction": "up", "observed_at": "2026-04-07T11:15:00+04:00"},
+      {"code": "SPX", "label": "S&P 500", "current_value": 6571.34, "raw_change": -5.96, "percent_change": -0.09, "direction": "down", "observed_at": "2026-04-07T00:20:00+04:00"}
+    ],
+    "primary_stop": {
+      "stop_id": "00513B",
+      "stop_title": "Aster Pharmacy",
+      "departures": [
+        {"stop_id": "00513B", "stop_title": "Aster Pharmacy", "route_number": "24", "destination": "Central Terminal", "scheduled_at": "2026-04-07T14:08:00+04:00", "expected_at": "2026-04-07T14:08:00+04:00", "due_minutes": 8, "is_live": true, "delay_minutes": 0, "marker": null, "source": "fixture"},
+        {"stop_id": "00513B", "stop_title": "Aster Pharmacy", "route_number": "54", "destination": "Corniche Hospital", "scheduled_at": "2026-04-07T14:22:00+04:00", "expected_at": "2026-04-07T14:22:00+04:00", "due_minutes": 22, "is_live": false, "delay_minutes": 0, "marker": null, "source": "fixture"}
+      ],
+      "hero": {"stop_id": "00513B", "route_number": "24", "destination": "Central Terminal", "due_label": "08 min", "scheduled_label": "14:08", "confidence_label": "live", "irregularity_flag": null},
+      "density_window": {"window_start": "2026-04-07T14:00:00+04:00", "window_end": "2026-04-07T15:00:00+04:00", "departures_count": 2, "routes_active": 2, "bins": [1, 1, 0, 0]},
+      "frequency_summaries": [
+        {"route_number": "24", "departures_count": 1, "median_spacing_minutes": null, "band": "unknown", "next_due_minutes": 8},
+        {"route_number": "54", "departures_count": 1, "median_spacing_minutes": null, "band": "unknown", "next_due_minutes": 22}
+      ],
+      "irregularity_summary": [],
+      "leave_by": {"walking_buffer_minutes": 5, "leave_by_at": "2026-04-07T14:03:00+04:00", "target_departure_at": "2026-04-07T14:08:00+04:00", "status": "buffered"}
+    },
+    "multi_stop": null,
+    "city_summary": {
+      "summary_line": "Next 24 to Central Terminal in 08 min from Aster Pharmacy.",
+      "detail_lines": [
+        "2 departures forecast in the next hour.",
+        "2 routes active in the next 60 minutes.",
+        "Quiet midday network with no active disruption flag."
+      ]
+    },
+    "degraded_reason": null
+  }
+}

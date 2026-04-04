@@ -1,0 +1,48 @@
+{
+  "raw": {
+    "bus": {
+      "00513B": []
+    }
+  },
+  "snapshot": {
+    "mode": "weekday_commute_now",
+    "generated_at": "2026-04-08T06:10:00+04:00",
+    "timezone": "Asia/Dubai",
+    "refresh_hint": "full",
+    "weather": {
+      "location_label": "Abu Dhabi",
+      "temperature_c": 25.0,
+      "condition_label": "Clear",
+      "humidity_pct": 55,
+      "aqi_index": 31,
+      "aqi_label": "Good",
+      "sunrise_local": "2026-04-08T05:58:00+04:00",
+      "sunset_local": "2026-04-08T18:31:00+04:00",
+      "observed_at": "2026-04-08T06:10:00+04:00"
+    },
+    "headlines": [
+      {"title": "UAE condemns 'acts of vandalism' on its mission in Damascus", "source_name": "Reuters", "url": "https://www.reuters.com/", "published_at": "2026-04-08T05:45:00+04:00"},
+      {"title": "Debris from aerial interception strikes Oracle building in Dubai, UAE says", "source_name": "CNBC", "url": "https://www.cnbc.com/", "published_at": "2026-04-08T05:25:00+04:00"},
+      {"title": "India Sends 1,000 Metric Tonnes of Rice to Burkina Faso as Humanitarian Aid", "source_name": "News On AIR", "url": "https://newsonair.gov.in/", "published_at": "2026-04-08T05:05:00+04:00"},
+      {"title": "8 Indian Vessels Have Crossed Strait Of Hormuz, Among Highest In The World", "source_name": "NDTV", "url": "https://www.ndtv.com/", "published_at": "2026-04-08T04:45:00+04:00"},
+      {"title": "India makes first Iranian oil buy in seven years with no payment problems", "source_name": "Reuters", "url": "https://www.reuters.com/", "published_at": "2026-04-08T04:20:00+04:00"},
+      {"title": "Iran points finger at Saudis and UAE after Chinese-made drone was shot down", "source_name": "South China Morning Post", "url": "https://www.scmp.com/", "published_at": "2026-04-08T04:00:00+04:00"}
+    ],
+    "primary_stop": {
+      "stop_id": "00513B",
+      "stop_title": "Aster Pharmacy",
+      "departures": [],
+      "hero": null,
+      "density_window": {"window_start": "2026-04-08T06:10:00+04:00", "window_end": "2026-04-08T07:10:00+04:00", "departures_count": 0, "routes_active": 0, "bins": [0, 0, 0, 0]},
+      "frequency_summaries": [],
+      "irregularity_summary": [],
+      "leave_by": {"walking_buffer_minutes": 5, "leave_by_at": null, "target_departure_at": null, "status": "unavailable"}
+    },
+    "multi_stop": null,
+    "city_summary": {
+      "summary_line": "Mobility feed quiet or unavailable right now",
+      "detail_lines": ["Renderer remains live with utility context intact."]
+    },
+    "degraded_reason": "Aster Pharmacy: No live departures returned by provider"
+  }
+}

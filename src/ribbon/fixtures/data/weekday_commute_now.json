@@ -1,0 +1,121 @@
+{
+  "raw": {
+    "bus": {
+      "00513B": [
+        {
+          "line": "24",
+          "direction": "Central Terminal",
+          "scheduled_iso": "2026-04-06T06:16:00+04:00",
+          "expected_iso": "2026-04-06T06:20:00+04:00",
+          "due_minutes": 4,
+          "isRealtime": true,
+          "delay_minutes": 4,
+          "marker": "Delay +4m"
+        },
+        {
+          "line": "54",
+          "direction": "Corniche Hospital",
+          "scheduled_iso": "2026-04-06T06:24:00+04:00",
+          "expected_iso": "2026-04-06T06:24:00+04:00",
+          "due_minutes": 8,
+          "isRealtime": true
+        },
+        {
+          "line": "24",
+          "direction": "Central Terminal",
+          "scheduled_iso": "2026-04-06T06:32:00+04:00",
+          "expected_iso": "2026-04-06T06:32:00+04:00",
+          "due_minutes": 16,
+          "isRealtime": false
+        },
+        {
+          "line": "94",
+          "direction": "Madinat Zayed",
+          "scheduled_iso": "2026-04-06T06:46:00+04:00",
+          "expected_iso": "2026-04-06T06:46:00+04:00",
+          "due_minutes": 30,
+          "isRealtime": false
+        }
+      ]
+    }
+  },
+  "snapshot": {
+    "mode": "weekday_commute_now",
+    "generated_at": "2026-04-06T06:16:00+04:00",
+    "timezone": "Asia/Dubai",
+    "refresh_hint": "full",
+    "weather": {
+      "location_label": "Abu Dhabi",
+      "temperature_c": 24.0,
+      "daily_high_c": 31.0,
+      "daily_low_c": 21.0,
+      "condition_label": "Clear",
+      "humidity_pct": 58,
+      "aqi_index": 25,
+      "aqi_label": "Good",
+      "sunrise_local": "2026-04-06T06:00:00+04:00",
+      "sunset_local": "2026-04-06T18:30:00+04:00",
+      "observed_at": "2026-04-06T06:16:00+04:00"
+    },
+    "headlines": [
+      {"title": "UAE condemns 'acts of vandalism' on its mission in Damascus", "source_name": "Reuters", "url": "https://www.reuters.com/", "published_at": "2026-04-06T05:40:00+04:00"},
+      {"title": "The National reports Abu Dhabi port corridor expansion after emergency cabinet review", "source_name": "The National", "url": "https://www.thenationalnews.com/", "published_at": "2026-04-06T05:30:00+04:00"},
+      {"title": "WAM says UAE aid bridge expands for regional civilian evacuations", "source_name": "WAM", "url": "https://www.wam.ae/", "published_at": "2026-04-06T05:15:00+04:00"},
+      {"title": "The Hindu says India parliament advances emergency relief package after overnight debate", "source_name": "The Hindu", "url": "https://www.thehindu.com/", "published_at": "2026-04-06T05:00:00+04:00"},
+      {"title": "Indian Express reports New Delhi reviews shipping security after Gulf disruption", "source_name": "The Indian Express", "url": "https://indianexpress.com/", "published_at": "2026-04-06T04:45:00+04:00"},
+      {"title": "India makes first Iranian oil buy in seven years with no payment problems", "source_name": "Reuters", "url": "https://www.reuters.com/", "published_at": "2026-04-06T04:20:00+04:00"}
+    ],
+    "market_indices": [
+      {"code": "NIFTY", "label": "NIFTY", "current_value": 22713.45, "raw_change": 94.8, "percent_change": 0.42, "direction": "up", "observed_at": "2026-04-06T11:20:00+04:00"},
+      {"code": "SPX", "label": "S&P 500", "current_value": 6582.69, "raw_change": -11.92, "percent_change": -0.18, "direction": "down", "observed_at": "2026-04-06T00:15:00+04:00"}
+    ],
+    "primary_stop": {
+      "stop_id": "00513B",
+      "stop_title": "Aster Pharmacy",
+      "departures": [
+        {"stop_id": "00513B", "stop_title": "Aster Pharmacy", "route_number": "24", "destination": "Central Terminal", "scheduled_at": "2026-04-06T06:16:00+04:00", "expected_at": "2026-04-06T06:20:00+04:00", "due_minutes": 4, "is_live": true, "delay_minutes": 4, "marker": "Delay +4m", "source": "fixture"},
+        {"stop_id": "00513B", "stop_title": "Aster Pharmacy", "route_number": "54", "destination": "Corniche Hospital", "scheduled_at": "2026-04-06T06:24:00+04:00", "expected_at": "2026-04-06T06:24:00+04:00", "due_minutes": 8, "is_live": true, "delay_minutes": 0, "marker": null, "source": "fixture"},
+        {"stop_id": "00513B", "stop_title": "Aster Pharmacy", "route_number": "24", "destination": "Central Terminal", "scheduled_at": "2026-04-06T06:32:00+04:00", "expected_at": "2026-04-06T06:32:00+04:00", "due_minutes": 16, "is_live": false, "delay_minutes": 0, "marker": null, "source": "fixture"},
+        {"stop_id": "00513B", "stop_title": "Aster Pharmacy", "route_number": "94", "destination": "Madinat Zayed", "scheduled_at": "2026-04-06T06:46:00+04:00", "expected_at": "2026-04-06T06:46:00+04:00", "due_minutes": 30, "is_live": false, "delay_minutes": 0, "marker": null, "source": "fixture"}
+      ],
+      "hero": {
+        "stop_id": "00513B",
+        "route_number": "24",
+        "destination": "Central Terminal",
+        "due_label": "04 min",
+        "scheduled_label": "06:20",
+        "confidence_label": "live",
+        "irregularity_flag": "Delay +4m"
+      },
+      "density_window": {
+        "window_start": "2026-04-06T06:16:00+04:00",
+        "window_end": "2026-04-06T07:16:00+04:00",
+        "departures_count": 4,
+        "routes_active": 3,
+        "bins": [2, 1, 1, 0]
+      },
+      "frequency_summaries": [
+        {"route_number": "24", "departures_count": 2, "median_spacing_minutes": 12, "band": "moderate", "next_due_minutes": 4},
+        {"route_number": "54", "departures_count": 1, "median_spacing_minutes": null, "band": "unknown", "next_due_minutes": 8},
+        {"route_number": "94", "departures_count": 1, "median_spacing_minutes": null, "band": "unknown", "next_due_minutes": 30}
+      ],
+      "irregularity_summary": ["R24: Delay +4m"],
+      "leave_by": {
+        "walking_buffer_minutes": 5,
+        "leave_by_at": "2026-04-06T06:15:00+04:00",
+        "target_departure_at": "2026-04-06T06:20:00+04:00",
+        "status": "leave_now"
+      }
+    },
+    "multi_stop": null,
+    "city_summary": {
+      "summary_line": "Next 24 to Central Terminal in 04 min from Aster Pharmacy.",
+      "detail_lines": [
+        "4 departures forecast in the next hour.",
+        "3 routes active in the next 60 minutes.",
+        "R24: Delay +4m"
+      ]
+    },
+    "degraded_reason": null
+  }
+}

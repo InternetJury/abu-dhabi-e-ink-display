@@ -1,0 +1,56 @@
+{
+  "raw": {
+    "bus": {
+      "00513B": [
+        {"line": "24", "direction": "Central Terminal", "expected_iso": "2026-04-08T14:14:00+04:00", "scheduled_iso": "2026-04-08T14:14:00+04:00", "due_minutes": 14, "isRealtime": true}
+      ]
+    }
+  },
+  "snapshot": {
+    "mode": "ambient_info",
+    "generated_at": "2026-04-08T14:00:00+04:00",
+    "timezone": "Asia/Dubai",
+    "refresh_hint": "incremental",
+    "weather": {
+      "location_label": "Abu Dhabi",
+      "temperature_c": 0.0,
+      "condition_label": "Unavailable",
+      "humidity_pct": null,
+      "aqi_index": null,
+      "aqi_label": null,
+      "sunrise_local": null,
+      "sunset_local": null,
+      "observed_at": "2026-04-08T14:00:00+04:00"
+    },
+    "headlines": [
+      {"title": "UAE condemns 'acts of vandalism' on its mission in Damascus", "source_name": "Reuters", "url": "https://www.reuters.com/", "published_at": "2026-04-08T12:30:00+04:00"},
+      {"title": "Debris from aerial interception strikes Oracle building in Dubai, UAE says", "source_name": "CNBC", "url": "https://www.cnbc.com/", "published_at": "2026-04-08T12:10:00+04:00"},
+      {"title": "India Sends 1,000 Metric Tonnes of Rice to Burkina Faso as Humanitarian Aid", "source_name": "News On AIR", "url": "https://newsonair.gov.in/", "published_at": "2026-04-08T11:50:00+04:00"},
+      {"title": "8 Indian Vessels Have Crossed Strait Of Hormuz, Among Highest In The World", "source_name": "NDTV", "url": "https://www.ndtv.com/", "published_at": "2026-04-08T11:20:00+04:00"},
+      {"title": "India makes first Iranian oil buy in seven years with no payment problems", "source_name": "Reuters", "url": "https://www.reuters.com/", "published_at": "2026-04-08T11:00:00+04:00"},
+      {"title": "Iran points finger at Saudis and UAE after Chinese-made drone was shot down", "source_name": "South China Morning Post", "url": "https://www.scmp.com/", "published_at": "2026-04-08T10:40:00+04:00"}
+    ],
+    "primary_stop": {
+      "stop_id": "00513B",
+      "stop_title": "Aster Pharmacy",
+      "departures": [
+        {"stop_id": "00513B", "stop_title": "Aster Pharmacy", "route_number": "24", "destination": "Central Terminal", "scheduled_at": "2026-04-08T14:14:00+04:00", "expected_at": "2026-04-08T14:14:00+04:00", "due_minutes": 14, "is_live": true, "delay_minutes": 0, "marker": null, "source": "fixture"}
+      ],
+      "hero": {"stop_id": "00513B", "route_number": "24", "destination": "Central Terminal", "due_label": "14 min", "scheduled_label": "14:14", "confidence_label": "live", "irregularity_flag": null},
+      "density_window": {"window_start": "2026-04-08T14:00:00+04:00", "window_end": "2026-04-08T15:00:00+04:00", "departures_count": 1, "routes_active": 1, "bins": [1, 0, 0, 0]},
+      "frequency_summaries": [{"route_number": "24", "departures_count": 1, "median_spacing_minutes": null, "band": "unknown", "next_due_minutes": 14}],
+      "irregularity_summary": [],
+      "leave_by": {"walking_buffer_minutes": 5, "leave_by_at": "2026-04-08T14:09:00+04:00", "target_departure_at": "2026-04-08T14:14:00+04:00", "status": "buffered"}
+    },
+    "multi_stop": null,
+    "city_summary": {
+      "summary_line": "Next 24 to Central Terminal in 14 min from Aster Pharmacy.",
+      "detail_lines": [
+        "1 departure forecast in the next hour.",
+        "1 route active in the next 60 minutes.",
+        "Weather feed unavailable, headlines cached."
+      ]
+    },
+    "degraded_reason": "Weather unavailable: using fallback utility state"
+  }
+}
