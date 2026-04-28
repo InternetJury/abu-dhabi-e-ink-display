@@ -36,7 +36,7 @@ The project renders a monochrome Abu Dhabi mobility ribbon as a PNG sized exactl
 The scheduler is time-zone aware (`Asia/Dubai`) and currently uses a 60-second render cadence with:
 
 - weekday commute window
-- weekend multi-stop mode
+- weekend one-minute alternation between multi-stop mode and ambient mode
 - ambient mode outside the commute priority window
 
 ### Renderer

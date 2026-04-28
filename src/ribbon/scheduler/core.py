@@ -8,6 +8,12 @@ from ribbon.models import ModeName, RefreshHint, RibbonSnapshot
 from ribbon.settings import SETTINGS
 
 
+WEEKEND_ROTATION = [
+    ModeName.WEEKEND_MULTI_STOP,
+    ModeName.AMBIENT_INFO,
+]
+
+
 def _weekday_window(now: datetime) -> bool:
     if now.weekday() >= 5:
         return False
@@ -21,11 +27,16 @@ def _rotation_index(now: datetime, modes: list[ModeName]) -> int:
     return (minutes_since_midnight // SETTINGS.rotation_minutes) % len(modes)
 
 
+def _minute_rotation_index(now: datetime, modes: list[ModeName]) -> int:
+    minutes_since_midnight = now.hour * 60 + now.minute
+    return minutes_since_midnight % len(modes)
+
+
 def select_mode(now: datetime) -> ModeName:
     if _weekday_window(now):
         return ModeName.WEEKDAY_COMMUTE_NOW
     if now.weekday() >= 5:
-        return ModeName.WEEKEND_MULTI_STOP
+        return WEEKEND_ROTATION[_minute_rotation_index(now, WEEKEND_ROTATION)]
     return ModeName.AMBIENT_INFO
 
 

@@ -24,9 +24,20 @@ def test_select_mode_uses_ambient_mode_weekday_outside_commute_window():
     assert select_mode(now) == ModeName.AMBIENT_INFO
 
 
-def test_select_mode_rotates_weekend_multi_stop():
+def test_select_mode_uses_weekend_multi_stop_on_even_weekend_minutes():
     now = datetime(2026, 4, 11, 10, 0, tzinfo=TZ)  # Saturday
     assert select_mode(now) == ModeName.WEEKEND_MULTI_STOP
+
+
+def test_select_mode_uses_ambient_info_on_odd_weekend_minutes():
+    now = datetime(2026, 4, 11, 10, 1, tzinfo=TZ)  # Saturday
+    assert select_mode(now) == ModeName.AMBIENT_INFO
+
+
+def test_select_mode_alternates_weekend_modes_every_minute():
+    first = datetime(2026, 4, 12, 15, 42, tzinfo=TZ)  # Sunday
+    second = datetime(2026, 4, 12, 15, 43, tzinfo=TZ)
+    assert select_mode(first) != select_mode(second)
 
 
 def test_refresh_hint_promotes_full_refresh_on_mode_change():
