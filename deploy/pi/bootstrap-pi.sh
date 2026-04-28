@@ -6,16 +6,11 @@ STATE_DIR="/var/lib/abu-dhabi-eink"
 LOG_DIR="/var/log/abu-dhabi-eink"
 SERVICE_NAME="ad-eink-display.service"
 HOSTNAME_VALUE="ad-eink-pi"
-TAILSCALE_AUTH_KEY=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --hostname)
       HOSTNAME_VALUE="$2"
-      shift 2
-      ;;
-    --tailscale-auth-key)
-      TAILSCALE_AUTH_KEY="$2"
       shift 2
       ;;
     *)
@@ -71,13 +66,8 @@ if ! command -v tailscale >/dev/null 2>&1; then
   curl -fsSL https://tailscale.com/install.sh | sh
 fi
 
-if [[ -n "${TAILSCALE_AUTH_KEY}" ]]; then
-  echo "Joining Tailscale as ${HOSTNAME_VALUE}"
-  sudo tailscale up --auth-key "${TAILSCALE_AUTH_KEY}" --hostname "${HOSTNAME_VALUE}" --ssh
-else
-  echo "Tailscale installed. Join the tailnet with:"
-  echo "  sudo tailscale up --hostname ${HOSTNAME_VALUE} --ssh"
-fi
+echo "Tailscale installed. Join the tailnet interactively with:"
+echo "  sudo tailscale up --hostname ${HOSTNAME_VALUE} --ssh"
 
 echo "Enabling display service"
 sudo systemctl daemon-reload

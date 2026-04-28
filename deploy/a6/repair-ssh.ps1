@@ -47,4 +47,4 @@ else {
 
 Write-Host "OpenSSH Server is ready."
 Write-Host "Validate from this PC with:"
-Write-Host "  ssh 100.64.104.121 hostname"
+Write-Host "  ssh <A6_TAILSCALE_IP_OR_HOSTNAME> hostname"

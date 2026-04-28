@@ -6,8 +6,8 @@ The locked templates do not change. The A6 renders a finished `1360x480` PNG eve
 
 ## Topology
 
-- Renderer: Geekom A6 Mini, Windows, Tailscale name `a6`, current Tailscale IP `100.64.104.121`
-- Display client: Raspberry Pi Zero 2 W, Raspberry Pi OS Lite, hostname `ad-eink-pi`
+- Renderer: Geekom A6 Mini, Windows, reachable over SSH by its LAN/Tailscale hostname or IP
+- Display client: Raspberry Pi Zero 2 W, Raspberry Pi OS Lite, hostname chosen during Raspberry Pi Imager setup
 - Transport: SSH/SCP over Tailscale
 - Frame path on A6: `C:\AbuDhabiEInk\frames\current.png`
 - Frame path on Pi: `/var/lib/abu-dhabi-eink/current.png`
@@ -31,19 +31,19 @@ Use Imager customization:
 - Wi-Fi: configured locally in Imager
 - timezone: `Asia/Dubai`
 
-The card is currently visible as `J:\` with about `64 GB` capacity. Confirm this again immediately before flashing:
+Confirm the removable microSD drive letter immediately before flashing:
 
 ```powershell
-Get-Volume -DriveLetter J
+Get-Volume -DriveLetter <BOOT_DRIVE_LETTER>
 Get-Disk | Where-Object BusType -eq USB
 ```
 
 ## 2. Enable Pi Zero USB gadget setup access
 
-After Raspberry Pi Imager finishes, Windows should remount the Pi boot partition. If it is still `J:\`, run:
+After Raspberry Pi Imager finishes, Windows should remount the Pi boot partition. Use its actual drive letter:
 
 ```powershell
-.\deploy\pi\enable-pi-zero-usb-gadget.ps1 -BootDriveLetter J
+.\deploy\pi\enable-pi-zero-usb-gadget.ps1 -BootDriveLetter <BOOT_DRIVE_LETTER>
 ```
 
 This adds:
@@ -145,7 +145,7 @@ Important Waveshare wiring notes:
 First ensure SSH to the A6 works over Tailscale:
 
 ```powershell
-ssh 100.64.104.121 hostname
+ssh <A6_TAILSCALE_IP_OR_HOSTNAME> hostname
 ```
 
 If this times out, run this script from an elevated Administrator PowerShell session on the A6:
@@ -154,7 +154,7 @@ If this times out, run this script from an elevated Administrator PowerShell ses
 powershell.exe -ExecutionPolicy Bypass -File C:\Path\To\app\deploy\a6\repair-ssh.ps1
 ```
 
-If the repo is not on the A6 yet, copy the script over manually or paste its contents into an elevated PowerShell window. After it completes, retry `ssh 100.64.104.121 hostname` from this PC.
+If the repo is not on the A6 yet, copy the script over manually or paste its contents into an elevated PowerShell window. After it completes, retry `ssh <A6_TAILSCALE_IP_OR_HOSTNAME> hostname` from this PC.
 
 On the A6, run PowerShell as Administrator:
 
@@ -186,7 +186,7 @@ ssh display@ad-eink-pi "ls -lh /var/lib/abu-dhabi-eink/current.png"
 
 ## 8. Acceptance checks
 
-- `tailscale status` shows both `a6` and `ad-eink-pi`.
+- `tailscale status` shows both the renderer Mini PC and the display Pi, if Tailscale is enabled on both devices.
 - A6 logs show a new render every minute.
 - Pi logs show a new frame checksum whenever the PNG changes.
 - The PNG on the Pi is exactly `1360x480`.
