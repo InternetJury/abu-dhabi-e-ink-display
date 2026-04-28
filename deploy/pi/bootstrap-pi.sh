@@ -40,6 +40,7 @@ sudo apt-get install -y \
   python3-spidev \
   python3-gpiozero \
   python3-rpi.gpio \
+  unzip \
   rsync
 
 echo "Enabling SPI"
@@ -50,9 +51,16 @@ fi
 echo "Creating runtime directories"
 sudo mkdir -p "${INSTALL_DIR}" "${STATE_DIR}" "${LOG_DIR}"
 sudo cp "${SCRIPT_DIR}/display-current.py" "${INSTALL_DIR}/display-current.py"
+sudo cp "${SCRIPT_DIR}/run-display-current.sh" "${INSTALL_DIR}/run-display-current.sh"
+sudo cp "${SCRIPT_DIR}/install-waveshare-10in85.sh" "${INSTALL_DIR}/install-waveshare-10in85.sh"
 sudo cp "${SCRIPT_DIR}/${SERVICE_NAME}" "/etc/systemd/system/${SERVICE_NAME}"
 sudo chown -R display:display "${STATE_DIR}" "${LOG_DIR}" || true
 sudo chmod +x "${INSTALL_DIR}/display-current.py"
+sudo chmod +x "${INSTALL_DIR}/run-display-current.sh" "${INSTALL_DIR}/install-waveshare-10in85.sh"
+
+if [[ ! -f /etc/default/ad-eink-display ]]; then
+  echo 'AD_EINK_DRIVER_ARGS=""' | sudo tee /etc/default/ad-eink-display >/dev/null
+fi
 
 if id display >/dev/null 2>&1; then
   sudo usermod -aG spi,gpio display || true

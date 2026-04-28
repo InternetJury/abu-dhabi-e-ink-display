@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import importlib
+import inspect
 import logging
 import sys
 import time
@@ -21,15 +22,20 @@ def sha256_file(path: Path) -> str:
 
 
 class EInkDriver:
-    def __init__(self, module_name: str | None, dry_run: bool) -> None:
+    def __init__(self, module_name: str | None, driver_lib: str | None, dry_run: bool) -> None:
         self.module_name = module_name
+        self.driver_lib = driver_lib
         self.dry_run = dry_run or not module_name
         self.epd = None
+        self.partial_ready = False
 
     def open(self) -> None:
         if self.dry_run:
             logging.info("Display client running in dry-run/checksum mode.")
             return
+
+        if self.driver_lib:
+            sys.path.insert(0, self.driver_lib)
 
         module = importlib.import_module(self.module_name or "")
         epd_class = getattr(module, "EPD", None)
@@ -53,12 +59,29 @@ class EInkDriver:
         getbuffer = getattr(self.epd, "getbuffer", None)
         payload = getbuffer(frame) if callable(getbuffer) else frame
 
+        if full_refresh and hasattr(self.epd, "init"):
+            self.epd.init()
+            self.partial_ready = False
+
         if not full_refresh and hasattr(self.epd, "display_Partial"):
-            self.epd.display_Partial(payload)
+            if not self.partial_ready and hasattr(self.epd, "init_Part"):
+                self.epd.init_Part()
+                self.partial_ready = True
+            self._display_partial(payload)
         elif hasattr(self.epd, "display"):
             self.epd.display(payload)
         else:
             raise RuntimeError("Display driver has no display/display_Partial method.")
+
+    def _display_partial(self, payload: object) -> None:
+        partial = getattr(self.epd, "display_Partial")
+        parameters = inspect.signature(partial).parameters
+        if len(parameters) >= 5:
+            width = int(getattr(self.epd, "width", 1360))
+            height = int(getattr(self.epd, "height", 480))
+            partial(payload, 0, 0, width, height)
+        else:
+            partial(payload)
 
 
 def configure_logging(log_file: Path | None) -> None:
@@ -88,6 +111,7 @@ def main() -> int:
     parser.add_argument("--poll-seconds", type=float, default=2.0)
     parser.add_argument("--full-refresh-seconds", type=int, default=300)
     parser.add_argument("--driver-module", default=None, help="Vendor Python module exposing EPD, for example waveshare_epd.epd13in3.")
+    parser.add_argument("--driver-lib", default=None, help="Directory to prepend to PYTHONPATH before importing the driver module.")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--log-file", default="/var/log/abu-dhabi-eink/display-current.log")
@@ -96,7 +120,7 @@ def main() -> int:
     configure_logging(Path(args.log_file) if args.log_file else None)
 
     frame_path = Path(args.image)
-    driver = EInkDriver(args.driver_module, args.dry_run)
+    driver = EInkDriver(args.driver_module, args.driver_lib, args.dry_run)
     driver.open()
 
     last_digest = ""

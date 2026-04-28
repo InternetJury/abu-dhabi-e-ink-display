@@ -96,24 +96,36 @@ The display client starts immediately in checksum/dry-run mode until the vendor 
 
 ## 5. Bind the SPI panel driver
 
-The display client is ready for a vendor Python module that exposes an `EPD` class with common e-ink methods such as `init`, `getbuffer`, `display`, or `display_Partial`.
-
-Once the panel vendor sample code is installed on the Pi, edit:
+The selected panel is the Waveshare `10.85inch e-Paper HAT+` black/white SPI display, SKU `29790`. It is a native `1360x480` panel and uses Waveshare's Python module:
 
 ```text
-/etc/systemd/system/ad-eink-display.service
+waveshare_epd.epd10in85
 ```
 
-Add the driver module to the `ExecStart` line:
-
-```text
---driver-module vendor_package.vendor_panel_module
-```
-
-Then reload:
+Install the vendor library on the Pi while keeping the display service in safe checksum mode:
 
 ```powershell
-ssh display@ad-eink-pi "sudo systemctl daemon-reload && sudo systemctl restart ad-eink-display.service"
+ssh display@ad-eink-pi "sudo /opt/abu-dhabi-eink/install-waveshare-10in85.sh"
+```
+
+After the HAT and panel are physically connected, enable real hardware output:
+
+```powershell
+ssh display@ad-eink-pi "sudo /opt/abu-dhabi-eink/install-waveshare-10in85.sh --enable-service"
+```
+
+This writes `/etc/default/ad-eink-display` with:
+
+```text
+AD_EINK_DRIVER_ARGS="--driver-lib /opt/abu-dhabi-eink/vendor/waveshare-10in85/RaspberryPi/python/lib --driver-module waveshare_epd.epd10in85"
+```
+
+Then reloads and restarts `ad-eink-display.service`.
+
+If you need to return to checksum mode before hardware is connected, reset the environment file:
+
+```powershell
+ssh display@ad-eink-pi "echo 'AD_EINK_DRIVER_ARGS=\"\"' | sudo tee /etc/default/ad-eink-display && sudo systemctl restart ad-eink-display.service"
 ```
 
 Check logs:
@@ -121,6 +133,12 @@ Check logs:
 ```powershell
 ssh display@ad-eink-pi "journalctl -u ad-eink-display.service -f"
 ```
+
+Important Waveshare wiring notes:
+
+- Directly mount the HAT onto the Pi 40-pin header, or use the Waveshare 10-pin mapping from the official manual.
+- SPI must expose both `/dev/spidev0.0` and `/dev/spidev0.1` because this panel uses separate `CS_M` and `CS_S`.
+- Do not enable hardware output until the HAT and panel ribbon are seated; otherwise the service may loop on driver/hardware errors.
 
 ## 6. Prepare the A6 Mini
 

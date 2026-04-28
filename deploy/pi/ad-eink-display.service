@@ -8,7 +8,8 @@ Type=simple
 User=display
 Group=display
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/usr/bin/python3 /opt/abu-dhabi-eink/display-current.py --image /var/lib/abu-dhabi-eink/current.png --log-file /var/log/abu-dhabi-eink/display-current.log
+EnvironmentFile=-/etc/default/ad-eink-display
+ExecStart=/opt/abu-dhabi-eink/run-display-current.sh
 Restart=always
 RestartSec=5
 
