@@ -37,7 +37,10 @@ function Get-CompatiblePython {
                 $major = [int]$Matches[1]
                 $minor = [int]$Matches[2]
                 if ($major -gt 3 -or ($major -eq 3 -and $minor -ge 11)) {
-                    return "py -$major.$minor"
+                    return [pscustomobject]@{
+                        Exe = "py"
+                        Args = @("-$major.$minor")
+                    }
                 }
             }
         }
@@ -48,19 +51,38 @@ function Get-CompatiblePython {
         $version = & python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"
         $parts = $version.Split(".")
         if ([int]$parts[0] -gt 3 -or ([int]$parts[0] -eq 3 -and [int]$parts[1] -ge 11)) {
-            return "python"
+            return [pscustomobject]@{
+                Exe = "python"
+                Args = @()
+            }
         }
     }
 
     Install-WingetPackage -Id "Python.Python.3.11" -Name "Python 3.11"
-    return "py -3.11"
+    return [pscustomobject]@{
+        Exe = "py"
+        Args = @("-3.11")
+    }
+}
+
+function Invoke-CompatiblePython {
+    param([Parameter(Mandatory = $true)][string[]]$Arguments)
+
+    $pythonArgs = @()
+    $pythonArgs += @($script:PythonCommand.Args)
+    $pythonArgs += $Arguments
+
+    & $script:PythonCommand.Exe @pythonArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "Python command failed: $($script:PythonCommand.Exe) $($pythonArgs -join ' ')"
+    }
 }
 
 if (-not (Test-Command git)) {
     Install-WingetPackage -Id "Git.Git" -Name "Git"
 }
 
-$pythonCommand = Get-CompatiblePython
+$script:PythonCommand = Get-CompatiblePython
 
 $root = New-Item -ItemType Directory -Force -Path $InstallRoot
 $appDir = Join-Path $root.FullName "app"
@@ -78,12 +100,21 @@ else {
 }
 
 $venvDir = Join-Path $appDir ".venv"
-if (-not (Test-Path $venvDir)) {
-    Write-Host "Creating Python virtual environment..."
-    Invoke-Expression "$pythonCommand -m venv `"$venvDir`""
+$pythonExe = Join-Path $venvDir "Scripts\python.exe"
+if ((Test-Path $venvDir) -and -not (Test-Path $pythonExe)) {
+    Write-Warning "Existing virtual environment is incomplete; recreating $venvDir."
+    Remove-Item -LiteralPath $venvDir -Recurse -Force
 }
 
-$pythonExe = Join-Path $venvDir "Scripts\python.exe"
+if (-not (Test-Path $pythonExe)) {
+    Write-Host "Creating Python virtual environment..."
+    Invoke-CompatiblePython -Arguments @("-m", "venv", $venvDir)
+}
+
+if (-not (Test-Path $pythonExe)) {
+    throw "Virtual environment creation failed; expected Python at $pythonExe."
+}
+
 & $pythonExe -m pip install --upgrade pip
 & $pythonExe -m pip install -e $appDir
 & $pythonExe -m playwright install chromium
