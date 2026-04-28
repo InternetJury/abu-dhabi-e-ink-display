@@ -4,6 +4,7 @@ param(
     [string]$PiUser = "display",
     [string]$RemotePath = "/var/lib/abu-dhabi-eink/current.png",
     [int]$SleepSeconds = 60,
+    [int]$LogRetentionDays = 14,
     [switch]$SkipPublish,
     [switch]$Once
 )
@@ -18,6 +19,17 @@ $currentFrame = Join-Path $framesDir "current.png"
 $tempFrame = Join-Path $framesDir "current.tmp.png"
 
 New-Item -ItemType Directory -Force -Path $framesDir, $logsDir | Out-Null
+
+function Invoke-StorageCleanup {
+    $cutoff = (Get-Date).AddDays(-1 * $LogRetentionDays)
+    Get-ChildItem -Path $logsDir -Filter "render-publisher-*.log" -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.LastWriteTime -lt $cutoff } |
+        Remove-Item -Force -ErrorAction SilentlyContinue
+
+    # The publisher is intentionally current-frame only. Remove interrupted temp files.
+    Get-ChildItem -Path $framesDir -Filter "*.tmp.png" -File -ErrorAction SilentlyContinue |
+        Remove-Item -Force -ErrorAction SilentlyContinue
+}
 
 function Write-Log {
     param([Parameter(Mandatory = $true)][string]$Message)
@@ -60,6 +72,8 @@ if (-not (Test-Path $cli)) {
 
 do {
     try {
+        Invoke-StorageCleanup
+
         & $cli render-live --output $tempFrame --use-playwright-fallback
         if ($LASTEXITCODE -ne 0) {
             throw "render-live failed with exit code $LASTEXITCODE."

@@ -6,6 +6,7 @@ import hashlib
 import importlib
 import inspect
 import logging
+from logging.handlers import RotatingFileHandler
 import sys
 import time
 from pathlib import Path
@@ -84,11 +85,11 @@ class EInkDriver:
             partial(payload)
 
 
-def configure_logging(log_file: Path | None) -> None:
+def configure_logging(log_file: Path | None, max_bytes: int, backup_count: int) -> None:
     handlers: list[logging.Handler] = [logging.StreamHandler(sys.stdout)]
     if log_file:
         log_file.parent.mkdir(parents=True, exist_ok=True)
-        handlers.append(logging.FileHandler(log_file))
+        handlers.append(RotatingFileHandler(log_file, maxBytes=max_bytes, backupCount=backup_count))
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(message)s",
@@ -115,9 +116,11 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--log-file", default="/var/log/abu-dhabi-eink/display-current.log")
+    parser.add_argument("--log-max-bytes", type=int, default=1024 * 1024)
+    parser.add_argument("--log-backups", type=int, default=3)
     args = parser.parse_args()
 
-    configure_logging(Path(args.log_file) if args.log_file else None)
+    configure_logging(Path(args.log_file) if args.log_file else None, args.log_max_bytes, args.log_backups)
 
     frame_path = Path(args.image)
     driver = EInkDriver(args.driver_module, args.driver_lib, args.dry_run)

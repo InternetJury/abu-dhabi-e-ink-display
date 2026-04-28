@@ -193,6 +193,18 @@ ssh display@ad-eink-pi "ls -lh /var/lib/abu-dhabi-eink/current.png"
 - Rebooting the A6 restarts the scheduled task after login.
 - Rebooting the Pi restarts `ad-eink-display.service`.
 
+## 9. Storage retention
+
+The runtime is current-frame only by design:
+
+- A6 keeps `C:\AbuDhabiEInk\frames\current.png` and may briefly create `current.tmp.png` during rendering.
+- Pi keeps `/var/lib/abu-dhabi-eink/current.png` and may briefly receive `/var/lib/abu-dhabi-eink/current.png.tmp` during atomic publish.
+- A6 removes interrupted `*.tmp.png` files on each publish cycle.
+- A6 keeps render publisher logs for `14` days by default.
+- Pi display logs rotate at `1 MB` with `3` backups by default.
+
+This means the long-running deployment does not accumulate one PNG per minute.
+
 ## Notes
 
 - Wi-Fi credentials should stay local to Raspberry Pi Imager or the Pi, not in repo scripts.
