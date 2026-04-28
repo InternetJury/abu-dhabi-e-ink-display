@@ -109,8 +109,9 @@ def main() -> int:
     parser.add_argument("--image", default="/var/lib/abu-dhabi-eink/current.png")
     parser.add_argument("--expected-width", type=int, default=1360)
     parser.add_argument("--expected-height", type=int, default=480)
-    parser.add_argument("--poll-seconds", type=float, default=2.0)
+    parser.add_argument("--poll-seconds", type=float, default=1.0)
     parser.add_argument("--full-refresh-seconds", type=int, default=300)
+    parser.add_argument("--max-frame-age-seconds", type=float, default=50.0)
     parser.add_argument("--driver-module", default=None, help="Vendor Python module exposing EPD, for example waveshare_epd.epd13in3.")
     parser.add_argument("--driver-lib", default=None, help="Directory to prepend to PYTHONPATH before importing the driver module.")
     parser.add_argument("--dry-run", action="store_true")
@@ -127,6 +128,7 @@ def main() -> int:
     driver.open()
 
     last_digest = ""
+    last_stale_digest = ""
     last_full_refresh = 0.0
 
     while True:
@@ -136,6 +138,19 @@ def main() -> int:
             else:
                 digest = sha256_file(frame_path)
                 if digest != last_digest:
+                    frame_age = time.time() - frame_path.stat().st_mtime
+                    if args.max_frame_age_seconds >= 0 and frame_age > args.max_frame_age_seconds:
+                        if digest != last_stale_digest:
+                            logging.warning(
+                                "Skipping stale frame %s; age %.1fs exceeds %.1fs",
+                                frame_path,
+                                frame_age,
+                                args.max_frame_age_seconds,
+                            )
+                            last_stale_digest = digest
+                        time.sleep(args.poll_seconds)
+                        continue
+
                     image = load_frame(frame_path, args.expected_width, args.expected_height)
                     now = time.monotonic()
                     full_refresh = (now - last_full_refresh) >= args.full_refresh_seconds
@@ -143,6 +158,7 @@ def main() -> int:
                     if full_refresh:
                         last_full_refresh = now
                     last_digest = digest
+                    last_stale_digest = ""
                     logging.info("Displayed %s sha256=%s", frame_path, digest[:12])
         except Exception as exc:
             logging.exception("Display update failed: %s", exc)

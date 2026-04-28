@@ -4,7 +4,9 @@ param(
     [string]$PiUser = "display",
     [string]$RemotePath = "/var/lib/abu-dhabi-eink/current.png",
     [int]$SleepSeconds = 60,
+    [int]$MaxFrameAgeSeconds = 45,
     [int]$LogRetentionDays = 14,
+    [switch]$NoMinuteAlignment,
     [switch]$SkipPublish,
     [switch]$Once
 )
@@ -29,6 +31,25 @@ function Invoke-StorageCleanup {
     # The publisher is intentionally current-frame only. Remove interrupted temp files.
     Get-ChildItem -Path $framesDir -Filter "*.tmp.png" -File -ErrorAction SilentlyContinue |
         Remove-Item -Force -ErrorAction SilentlyContinue
+}
+
+function Wait-UntilNextRenderSlot {
+    if ($NoMinuteAlignment -or $Once) {
+        return
+    }
+
+    $now = Get-Date
+    $secondsSinceMidnight = [int][Math]::Floor($now.TimeOfDay.TotalSeconds)
+    $remainder = $secondsSinceMidnight % $SleepSeconds
+    $delaySeconds = $SleepSeconds - $remainder - ($now.Millisecond / 1000.0)
+    if ($delaySeconds -ge $SleepSeconds - 0.25) {
+        $delaySeconds = 0
+    }
+
+    if ($delaySeconds -gt 0) {
+        Write-Log ("Waiting {0:N1}s for the next aligned render slot." -f $delaySeconds)
+        Start-Sleep -Milliseconds ([int][Math]::Ceiling($delaySeconds * 1000))
+    }
 }
 
 function Write-Log {
@@ -73,15 +94,34 @@ if (-not (Test-Path $cli)) {
 do {
     try {
         Invoke-StorageCleanup
+        Wait-UntilNextRenderSlot
 
+        $renderStarted = Get-Date
         & $cli render-live --output $tempFrame --use-playwright-fallback
         if ($LASTEXITCODE -ne 0) {
             throw "render-live failed with exit code $LASTEXITCODE."
         }
 
+        $renderAgeSeconds = ((Get-Date) - $renderStarted).TotalSeconds
+        if ($renderAgeSeconds -gt $MaxFrameAgeSeconds) {
+            Remove-Item -LiteralPath $tempFrame -Force -ErrorAction SilentlyContinue
+            Write-Log (
+                "Skipped publishing stale frame; render took {0:N1}s, max allowed is {1}s." -f
+                $renderAgeSeconds,
+                $MaxFrameAgeSeconds
+            )
+            if ($Once) {
+                break
+            }
+            continue
+        }
+
         Move-Item -Path $tempFrame -Destination $currentFrame -Force
         Publish-Frame
-        Write-Log "Rendered and published $currentFrame to $($PiUser)@$($PiHost):$RemotePath"
+        Write-Log (
+            "Rendered and published $currentFrame to $($PiUser)@$($PiHost):$RemotePath in {0:N1}s" -f
+            $renderAgeSeconds
+        )
     }
     catch {
         Write-Log "ERROR: $($_.Exception.Message)"
@@ -91,5 +131,7 @@ do {
         break
     }
 
-    Start-Sleep -Seconds $SleepSeconds
+    if ($NoMinuteAlignment) {
+        Start-Sleep -Seconds $SleepSeconds
+    }
 } while ($true)

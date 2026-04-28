@@ -11,7 +11,7 @@ The locked templates do not change. The A6 renders a finished `1360x480` PNG eve
 - Transport: SSH/SCP over Tailscale
 - Frame path on A6: `C:\AbuDhabiEInk\frames\current.png`
 - Frame path on Pi: `/var/lib/abu-dhabi-eink/current.png`
-- Refresh cadence: render every `60` seconds, full e-ink refresh every `5` minutes
+- Refresh cadence: render on minute boundaries, full e-ink refresh every `5` minutes
 
 ## 1. Prepare the microSD
 
@@ -204,6 +204,18 @@ The runtime is current-frame only by design:
 - Pi display logs rotate at `1 MB` with `3` backups by default.
 
 This means the long-running deployment does not accumulate one PNG per minute.
+
+## 10. Freshness guarantees
+
+The runtime is tuned to avoid showing an old minute on the e-paper panel:
+
+- A6 waits for aligned render slots, so normal renders start at `HH:MM:00` rather than drifting by “sleep after render” timing.
+- A6 skips publishing a frame if rendering takes more than `45` seconds.
+- Pi polls for changed frames every `1` second.
+- Pi skips display updates when the received frame file is older than `50` seconds.
+- The publish operation is atomic: A6 copies to `current.png.tmp`, then renames it to `current.png`.
+
+In normal operation this means a frame generated for `10:00` is published and picked up during the `10:00` minute, not displayed as a fresh update at `10:01` or later.
 
 ## Notes
 
