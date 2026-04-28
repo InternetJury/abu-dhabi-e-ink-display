@@ -85,7 +85,7 @@ def build_live_snapshot(
         degraded_notes.append(f"Weather unavailable: {exc}")
 
     try:
-        headlines = headline_provider.fetch(limit=6)
+        headlines = headline_provider.fetch(limit=8)
     except ProviderError as exc:
         headlines = []
         degraded_notes.append(f"Headlines unavailable: {exc}")

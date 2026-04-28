@@ -153,6 +153,10 @@ The current provider/scheduler stack is sufficient for public release, with thes
 
 Phase 2 is optional and mainly about hardware deployment and production hardening, not template work. See [docs/phase-status.md](docs/phase-status.md).
 
+## Device Deployment
+
+The recommended hardware topology is a Geekom A6 Mini as the renderer and a Raspberry Pi Zero 2 W as the SPI e-ink display client. The deployment scripts and step-by-step setup guide are in [docs/device-deployment.md](docs/device-deployment.md).
+
 ## Tests
 
 The repository includes coverage for:

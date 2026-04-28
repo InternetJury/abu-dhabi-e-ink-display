@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import hashlib
+import importlib
+import logging
+import sys
+import time
+from pathlib import Path
+
+from PIL import Image
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+class EInkDriver:
+    def __init__(self, module_name: str | None, dry_run: bool) -> None:
+        self.module_name = module_name
+        self.dry_run = dry_run or not module_name
+        self.epd = None
+
+    def open(self) -> None:
+        if self.dry_run:
+            logging.info("Display client running in dry-run/checksum mode.")
+            return
+
+        module = importlib.import_module(self.module_name or "")
+        epd_class = getattr(module, "EPD", None)
+        if epd_class is None:
+            raise RuntimeError(f"{self.module_name} does not expose an EPD class.")
+
+        self.epd = epd_class()
+        if hasattr(self.epd, "init"):
+            self.epd.init()
+        logging.info("Loaded e-ink driver module %s", self.module_name)
+
+    def display(self, image: Image.Image, full_refresh: bool) -> None:
+        if self.dry_run:
+            logging.info("Dry-run display update accepted; full_refresh=%s", full_refresh)
+            return
+
+        if self.epd is None:
+            raise RuntimeError("Display driver has not been opened.")
+
+        frame = image.convert("1")
+        getbuffer = getattr(self.epd, "getbuffer", None)
+        payload = getbuffer(frame) if callable(getbuffer) else frame
+
+        if not full_refresh and hasattr(self.epd, "display_Partial"):
+            self.epd.display_Partial(payload)
+        elif hasattr(self.epd, "display"):
+            self.epd.display(payload)
+        else:
+            raise RuntimeError("Display driver has no display/display_Partial method.")
+
+
+def configure_logging(log_file: Path | None) -> None:
+    handlers: list[logging.Handler] = [logging.StreamHandler(sys.stdout)]
+    if log_file:
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        handlers.append(logging.FileHandler(log_file))
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s",
+        handlers=handlers,
+    )
+
+
+def load_frame(path: Path, width: int, height: int) -> Image.Image:
+    image = Image.open(path)
+    if image.size != (width, height):
+        raise ValueError(f"Expected {width}x{height}, got {image.size[0]}x{image.size[1]}")
+    return image
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Display the current Abu Dhabi e-ink PNG when it changes.")
+    parser.add_argument("--image", default="/var/lib/abu-dhabi-eink/current.png")
+    parser.add_argument("--expected-width", type=int, default=1360)
+    parser.add_argument("--expected-height", type=int, default=480)
+    parser.add_argument("--poll-seconds", type=float, default=2.0)
+    parser.add_argument("--full-refresh-seconds", type=int, default=300)
+    parser.add_argument("--driver-module", default=None, help="Vendor Python module exposing EPD, for example waveshare_epd.epd13in3.")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--once", action="store_true")
+    parser.add_argument("--log-file", default="/var/log/abu-dhabi-eink/display-current.log")
+    args = parser.parse_args()
+
+    configure_logging(Path(args.log_file) if args.log_file else None)
+
+    frame_path = Path(args.image)
+    driver = EInkDriver(args.driver_module, args.dry_run)
+    driver.open()
+
+    last_digest = ""
+    last_full_refresh = 0.0
+
+    while True:
+        try:
+            if not frame_path.exists():
+                logging.info("Waiting for %s", frame_path)
+            else:
+                digest = sha256_file(frame_path)
+                if digest != last_digest:
+                    image = load_frame(frame_path, args.expected_width, args.expected_height)
+                    now = time.monotonic()
+                    full_refresh = (now - last_full_refresh) >= args.full_refresh_seconds
+                    driver.display(image, full_refresh=full_refresh)
+                    if full_refresh:
+                        last_full_refresh = now
+                    last_digest = digest
+                    logging.info("Displayed %s sha256=%s", frame_path, digest[:12])
+        except Exception as exc:
+            logging.exception("Display update failed: %s", exc)
+
+        if args.once:
+            break
+        time.sleep(args.poll_seconds)
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

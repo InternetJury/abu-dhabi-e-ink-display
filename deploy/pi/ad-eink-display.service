@@ -1,0 +1,16 @@
+[Unit]
+Description=Abu Dhabi E-Ink Display Client
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=display
+Group=display
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 /opt/abu-dhabi-eink/display-current.py --image /var/lib/abu-dhabi-eink/current.png --log-file /var/log/abu-dhabi-eink/display-current.log
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

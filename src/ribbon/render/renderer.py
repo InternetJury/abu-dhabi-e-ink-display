@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Sequence
 from zoneinfo import ZoneInfo
 
 from PIL import Image, ImageDraw
@@ -182,7 +182,7 @@ class RibbonRenderer:
         metrics_top = divider_y + 14
         humidity_top = metrics_top
         aqi_top = metrics_top + 24
-        self._draw_icon_metric_row(
+        humidity_bottom = self._draw_icon_metric_row(
             draw,
             left,
             humidity_top,
@@ -193,7 +193,7 @@ class RibbonRenderer:
             metric_label_font,
             metric_value_font,
         )
-        self._draw_icon_metric_row(
+        aqi_bottom = self._draw_wrapped_metric_row(
             draw,
             left,
             aqi_top,
@@ -205,10 +205,7 @@ class RibbonRenderer:
             metric_value_font,
         )
 
-        metrics_bottom = aqi_top + max(
-            self._text_height(draw, "AQI", metric_label_font),
-            self._text_height(draw, "99 MODERATE", metric_value_font),
-        )
+        metrics_bottom = max(humidity_bottom, aqi_bottom)
         solar_font_h = self._text_height(draw, "SUNRISE 06:10", solar_font)
         solar_top, market_divider_y, market_top = self._fit_solar_market_sections(
             metrics_bottom=metrics_bottom,
@@ -249,7 +246,9 @@ class RibbonRenderer:
             meta_font,
             headline_font,
             max_lines=3,
-            counts=(6, 5),
+            divider_gap=10,
+            min_count=5,
+            max_count=8,
         )
         self._draw_headline_stack(
             draw,
@@ -509,7 +508,7 @@ class RibbonRenderer:
         metrics_top = divider_y + 14
         humidity_top = metrics_top
         aqi_top = metrics_top + 26
-        self._draw_icon_metric_row(
+        humidity_bottom = self._draw_icon_metric_row(
             draw,
             left,
             humidity_top,
@@ -520,7 +519,7 @@ class RibbonRenderer:
             metric_label_font,
             metric_value_font,
         )
-        self._draw_icon_metric_row(
+        aqi_bottom = self._draw_wrapped_metric_row(
             draw,
             left,
             aqi_top,
@@ -532,10 +531,7 @@ class RibbonRenderer:
             metric_value_font,
         )
 
-        metrics_bottom = aqi_top + max(
-            self._text_height(draw, "AQI", metric_label_font),
-            self._text_height(draw, "99 MODERATE", metric_value_font),
-        )
+        metrics_bottom = max(humidity_bottom, aqi_bottom)
         solar_font_h = self._text_height(draw, "SUNRISE 06:10", solar_font)
         solar_top, market_divider_y, market_top = self._fit_solar_market_sections(
             metrics_bottom=metrics_bottom,
@@ -581,7 +577,9 @@ class RibbonRenderer:
             meta_font,
             headline_font,
             max_lines=2,
-            counts=(6, 5),
+            divider_gap=12,
+            min_count=5,
+            max_count=8,
         )
         self._draw_headline_stack(
             draw,
@@ -680,11 +678,56 @@ class RibbonRenderer:
         value: str,
         label_font,
         value_font,
-    ) -> None:
+    ) -> int:
         self._draw_icon(draw, left, top - 2, icon_name, 16)
         self._draw_text(draw, left + 24, top, label.upper(), label_font, TEXT_MUTED)
         value_w = self._text_width(draw, value, value_font)
         self._draw_text(draw, left + usable_w - value_w, top - 2, value, value_font, BLACK)
+        return max(
+            top + self._text_height(draw, label.upper(), label_font),
+            top - 2 + self._text_height(draw, value, value_font),
+            top + 16,
+        )
+
+    def _draw_wrapped_metric_row(
+        self,
+        draw: ImageDraw.ImageDraw,
+        left: int,
+        top: int,
+        usable_w: int,
+        icon_name: str,
+        label: str,
+        value: str,
+        label_font,
+        value_font,
+    ) -> int:
+        label_text = label.upper()
+        self._draw_icon(draw, left, top - 2, icon_name, 16)
+        self._draw_text(draw, left + 24, top, label_text, label_font, TEXT_MUTED)
+
+        value_left = left + max(92, int(usable_w * 0.42))
+        value_right = left + usable_w
+        value_max_width = max(40, value_right - value_left)
+        value_lines = self._fit_metric_value_lines(draw, value, value_font, value_max_width)
+        line_h = self._text_height(draw, "Ag", value_font)
+        value_y = top - 2
+
+        for index, line in enumerate(value_lines):
+            line_w = self._text_width(draw, line, value_font)
+            self._draw_text(
+                draw,
+                value_right - line_w,
+                value_y + index * (line_h + 2),
+                line,
+                value_font,
+                BLACK,
+            )
+
+        return max(
+            top + self._text_height(draw, label_text, label_font),
+            value_y + (len(value_lines) * line_h) + (max(0, len(value_lines) - 1) * 2),
+            top + 16,
+        )
 
     def _draw_icon_text_row(
         self,
@@ -831,7 +874,9 @@ class RibbonRenderer:
         headline_font,
         *,
         max_lines: int,
-        counts: Iterable[int],
+        divider_gap: int,
+        min_count: int,
+        max_count: int,
     ) -> list:
         meta_h = self._text_height(draw, "REUTERS", meta_font)
         headline_h = self._text_height(draw, "Ag", headline_font)
@@ -845,16 +890,20 @@ class RibbonRenderer:
                     height += divider_gap + 1
             return height
 
-        for count in counts:
+        available_count = len(headlines)
+        if not available_count:
+            return []
+
+        upper = min(available_count, max_count)
+        lower = min(min_count, upper)
+        for count in range(upper, lower - 1, -1):
             subset = list(headlines[:count])
-            if subset and estimate_height(subset, 12) <= available_h:
+            if estimate_height(subset, divider_gap) <= available_h:
                 return subset
 
-        for count in range(min(len(headlines), 6), 0, -1):
-            subset = list(headlines[:count])
-            if estimate_height(subset, 12) <= available_h:
-                return subset
-        return list(headlines[:1])
+        if available_count >= min_count:
+            return list(headlines[:min_count])
+        return list(headlines[:upper])
 
     def _weekday_row_slots(self, draw: ImageDraw.ImageDraw, right: int, time_font, due_font) -> tuple[int, int, int]:
         due_slot = max(
@@ -924,6 +973,21 @@ class RibbonRenderer:
             self._ellipsize(draw, condition_text, primary_font, max_width),
             self._ellipsize(draw, high_low, secondary_font, max_width),
         )
+
+    def _fit_metric_value_lines(
+        self,
+        draw: ImageDraw.ImageDraw,
+        value: str,
+        font,
+        max_width: int,
+        max_lines: int = 2,
+    ) -> list[str]:
+        cleaned = " ".join((value or "").split())
+        if not cleaned:
+            return [""]
+        if self._text_width(draw, cleaned, font) <= max_width:
+            return [cleaned]
+        return self._clamp_lines(draw, cleaned, font, max_width, max_lines)
 
     def _fit_solar_market_sections(
         self,
