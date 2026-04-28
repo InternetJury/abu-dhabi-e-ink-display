@@ -20,13 +20,18 @@ Set-ItemProperty -Path $desktopKey -Name ScreenSaverIsSecure -Value "0"
 Set-ItemProperty -Path $desktopKey -Name ScreenSaveTimeOut -Value "0"
 
 if (Test-IsAdmin) {
-    $systemPolicyKey = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
-    New-Item -Path $systemPolicyKey -Force | Out-Null
-    New-ItemProperty -Path $systemPolicyKey -Name InactivityTimeoutSecs -PropertyType DWord -Value 0 -Force | Out-Null
+    try {
+        $systemPolicyKey = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
+        New-Item -Path $systemPolicyKey -Force | Out-Null
+        New-ItemProperty -Path $systemPolicyKey -Name InactivityTimeoutSecs -PropertyType DWord -Value 0 -Force | Out-Null
 
-    $lockScreenKey = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Personalization"
-    New-Item -Path $lockScreenKey -Force | Out-Null
-    New-ItemProperty -Path $lockScreenKey -Name NoLockScreen -PropertyType DWord -Value 1 -Force | Out-Null
+        $lockScreenKey = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Personalization"
+        New-Item -Path $lockScreenKey -Force | Out-Null
+        New-ItemProperty -Path $lockScreenKey -Name NoLockScreen -PropertyType DWord -Value 1 -Force | Out-Null
+    }
+    catch {
+        Write-Warning "Machine-level lock-screen policy could not be changed: $($_.Exception.Message)"
+    }
 }
 else {
     Write-Warning "Not running as Administrator; machine-level lock-screen policies were not changed."

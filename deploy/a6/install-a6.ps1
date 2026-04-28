@@ -28,22 +28,26 @@ function Install-WingetPackage {
     winget install --id $Id --exact --silent --accept-source-agreements --accept-package-agreements
 }
 
-function Get-Python311 {
+function Get-CompatiblePython {
     $py = Get-Command py -ErrorAction SilentlyContinue
     if ($py) {
-        try {
-            & py -3.11 --version | Out-Null
-            return "py -3.11"
-        }
-        catch {
-            # Fall through to python command check.
+        $runtimes = & py -0p 2>$null
+        foreach ($line in $runtimes) {
+            if ($line -match "-V:(\d+)\.(\d+)") {
+                $major = [int]$Matches[1]
+                $minor = [int]$Matches[2]
+                if ($major -gt 3 -or ($major -eq 3 -and $minor -ge 11)) {
+                    return "py -$major.$minor"
+                }
+            }
         }
     }
 
     $python = Get-Command python -ErrorAction SilentlyContinue
     if ($python) {
         $version = & python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"
-        if ($version -eq "3.11") {
+        $parts = $version.Split(".")
+        if ([int]$parts[0] -gt 3 -or ([int]$parts[0] -eq 3 -and [int]$parts[1] -ge 11)) {
             return "python"
         }
     }
@@ -56,7 +60,7 @@ if (-not (Test-Command git)) {
     Install-WingetPackage -Id "Git.Git" -Name "Git"
 }
 
-$pythonCommand = Get-Python311
+$pythonCommand = Get-CompatiblePython
 
 $root = New-Item -ItemType Directory -Force -Path $InstallRoot
 $appDir = Join-Path $root.FullName "app"
