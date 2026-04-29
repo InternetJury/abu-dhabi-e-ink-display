@@ -19,6 +19,7 @@ Official references:
 - Shutdown requires a short-lived confirmation code.
 - All unknown messages are ignored.
 - Unauthorized users receive no operational status and cannot trigger SSH commands.
+- Unauthorized/non-private command attempts are counted in aggregate only, not logged message-by-message.
 - The A6 runs one fixed SSH command for shutdown; Telegram message text is never interpolated into a shell command.
 - The Pi sudoers rule permits only `/opt/abu-dhabi-eink/shutdown-display.sh`, not unrestricted root access.
 

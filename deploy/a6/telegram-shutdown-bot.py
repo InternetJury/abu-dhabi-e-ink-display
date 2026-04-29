@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import json
 import logging
 from logging.handlers import RotatingFileHandler
@@ -64,6 +64,13 @@ class BotState:
 class PendingConfirmation:
     code: str
     expires_at: float
+
+
+@dataclass
+class RejectionCounters:
+    unauthorized: int = 0
+    non_private: int = 0
+    last_log_epoch: float = 0.0
 
 
 class JsonStateStore:
@@ -204,6 +211,7 @@ class BotController:
         self.clock = clock
         self.code_factory = code_factory or make_confirmation_code
         self.pending: dict[int, PendingConfirmation] = {}
+        self.rejections = RejectionCounters(last_log_epoch=self.clock())
 
     def handle_update(self, update: dict[str, Any]) -> None:
         message = update.get("message")
@@ -230,11 +238,11 @@ class BotController:
             return
 
         if chat_type != "private" or chat_id != user_id:
-            logging.warning("Ignoring non-private Telegram command from user_id=%s chat_id=%s", user_id, chat_id)
+            self._record_rejection(non_private=True)
             return
 
         if user_id not in self.config.allowed_user_ids:
-            logging.warning("Ignoring unauthorized Telegram command=%s from user_id=%s", command, user_id)
+            self._record_rejection(unauthorized=True)
             return
 
         if command == "/status":
@@ -246,6 +254,26 @@ class BotController:
         elif command == "/cancel":
             self.pending.pop(user_id, None)
             self.telegram.send_message(chat_id, "Pending shutdown cancelled.")
+
+    def _record_rejection(self, unauthorized: bool = False, non_private: bool = False) -> None:
+        if unauthorized:
+            self.rejections.unauthorized += 1
+        if non_private:
+            self.rejections.non_private += 1
+
+        now = self.clock()
+        if now - self.rejections.last_log_epoch < 300:
+            return
+
+        if self.rejections.unauthorized or self.rejections.non_private:
+            logging.warning(
+                "Ignored Telegram commands in last window: unauthorized=%s non_private=%s",
+                self.rejections.unauthorized,
+                self.rejections.non_private,
+            )
+            self.rejections.unauthorized = 0
+            self.rejections.non_private = 0
+            self.rejections.last_log_epoch = now
 
     def _send_status(self, chat_id: int) -> None:
         try:

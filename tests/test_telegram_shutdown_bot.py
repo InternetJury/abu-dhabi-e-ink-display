@@ -99,6 +99,7 @@ def test_unauthorized_status_is_ignored_without_operational_response():
     assert executor.status_calls == 0
     assert executor.shutdown_calls == 0
     assert telegram.messages == []
+    assert controller.rejections.unauthorized == 1
 
 
 def test_authorized_status_runs_status_only():
@@ -144,7 +145,7 @@ def test_valid_confirmation_runs_one_fixed_shutdown_action_and_saves_cooldown():
 
 
 def test_expired_confirmation_does_not_shutdown():
-    times = iter([1000.0, 1100.0])
+    times = iter([900.0, 1000.0, 1100.0])
     telegram = FakeTelegram()
     executor = FakeExecutor()
     state = bot.BotState()
@@ -174,6 +175,7 @@ def test_non_private_chat_is_ignored_even_for_allowed_user():
     assert executor.status_calls == 0
     assert executor.shutdown_calls == 0
     assert telegram.messages == []
+    assert controller.rejections.non_private == 1
 
 
 def test_shell_executor_rejects_unsafe_ssh_components():
