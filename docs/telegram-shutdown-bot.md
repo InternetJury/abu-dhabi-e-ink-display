@@ -80,6 +80,14 @@ Stop-ScheduledTask -TaskName "Abu Dhabi E-Ink Telegram Control Bot"
 Start-ScheduledTask -TaskName "Abu Dhabi E-Ink Telegram Control Bot"
 ```
 
+Alternatively, after you have the regenerated token and numeric user IDs, run the local A6 helper:
+
+```powershell
+C:\AbuDhabiEInk\app\deploy\a6\configure-telegram-bot-local.ps1 -EnableTask -StartTask
+```
+
+It prompts locally for the token and allowlist, writes only `C:\AbuDhabiEInk\secrets\telegram-bot.env`, then enables and starts the scheduled task.
+
 ## Pi Shutdown Wrapper
 
 The Pi bootstrap installs:
