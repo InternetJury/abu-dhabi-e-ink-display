@@ -1,5 +1,11 @@
 .pytest_cache/
 .venv/
+.env
+.env.*
+*.env
+secrets/
+state/
+logs/
 __pycache__/
 *.pyc
 *.pyo

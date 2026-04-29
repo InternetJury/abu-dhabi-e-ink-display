@@ -48,10 +48,20 @@ sudo mkdir -p "${INSTALL_DIR}" "${STATE_DIR}" "${LOG_DIR}"
 sudo cp "${SCRIPT_DIR}/display-current.py" "${INSTALL_DIR}/display-current.py"
 sudo cp "${SCRIPT_DIR}/run-display-current.sh" "${INSTALL_DIR}/run-display-current.sh"
 sudo cp "${SCRIPT_DIR}/install-waveshare-10in85.sh" "${INSTALL_DIR}/install-waveshare-10in85.sh"
+sudo cp "${SCRIPT_DIR}/shutdown-display.sh" "${INSTALL_DIR}/shutdown-display.sh"
 sudo cp "${SCRIPT_DIR}/${SERVICE_NAME}" "/etc/systemd/system/${SERVICE_NAME}"
 sudo chown -R display:display "${STATE_DIR}" "${LOG_DIR}" || true
 sudo chmod +x "${INSTALL_DIR}/display-current.py"
-sudo chmod +x "${INSTALL_DIR}/run-display-current.sh" "${INSTALL_DIR}/install-waveshare-10in85.sh"
+sudo chmod +x "${INSTALL_DIR}/run-display-current.sh" "${INSTALL_DIR}/install-waveshare-10in85.sh" "${INSTALL_DIR}/shutdown-display.sh"
+
+if id display >/dev/null 2>&1; then
+  echo "Installing restricted shutdown sudoers rule"
+  sudo tee /etc/sudoers.d/abu-dhabi-eink-shutdown >/dev/null <<EOF
+display ALL=(root) NOPASSWD: ${INSTALL_DIR}/shutdown-display.sh
+EOF
+  sudo chmod 0440 /etc/sudoers.d/abu-dhabi-eink-shutdown
+  sudo visudo -cf /etc/sudoers.d/abu-dhabi-eink-shutdown >/dev/null
+fi
 
 if [[ ! -f /etc/default/ad-eink-display ]]; then
   echo 'AD_EINK_DRIVER_ARGS=""' | sudo tee /etc/default/ad-eink-display >/dev/null

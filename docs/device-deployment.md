@@ -217,6 +217,18 @@ The runtime is tuned to avoid showing an old minute on the e-paper panel:
 
 In normal operation this means a frame generated for `10:00` is published and picked up during the `10:00` minute, not displayed as a fresh update at `10:01` or later.
 
+## 11. Optional Telegram shutdown bot
+
+The A6 can also run a private Telegram control bot for graceful Pi shutdown. It is intentionally narrow: it can report status and shut down the Pi after a confirmation code, but it cannot execute arbitrary Telegram messages as shell commands.
+
+Setup guide:
+
+```text
+docs/telegram-shutdown-bot.md
+```
+
+Secrets are stored only on the A6 at `C:\AbuDhabiEInk\secrets\telegram-bot.env`. Do not commit bot tokens, Telegram user IDs, phone numbers, passwords, IPs, or SSH keys.
+
 ## Notes
 
 - Wi-Fi credentials should stay local to Raspberry Pi Imager or the Pi, not in repo scripts.
