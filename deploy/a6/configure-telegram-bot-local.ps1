@@ -18,9 +18,10 @@ if (-not $token -or $token -eq "PASTE_BOTFATHER_TOKEN_HERE") {
     throw "A real regenerated BotFather token is required."
 }
 
-$allowedIds = Read-Host "Paste allowed numeric Telegram user IDs separated by commas"
-if (-not $allowedIds) {
-    throw "At least one allowed Telegram user ID is required."
+$allowedIds = Read-Host "Paste allowed numeric Telegram user IDs separated by commas, or press Enter to keep/discover later"
+$existingAllowedIds = ($lines | Where-Object { $_ -like "TELEGRAM_ALLOWED_USER_IDS=*" } | Select-Object -First 1) -replace "^TELEGRAM_ALLOWED_USER_IDS=", ""
+if (($EnableTask -or $StartTask) -and -not $allowedIds -and -not $existingAllowedIds) {
+    throw "Allowed Telegram user IDs are required before enabling or starting the scheduled task."
 }
 
 $lines = Get-Content -Path $configPath
@@ -29,7 +30,12 @@ $updated = foreach ($line in $lines) {
         "TELEGRAM_BOT_TOKEN=$token"
     }
     elseif ($line -like "TELEGRAM_ALLOWED_USER_IDS=*") {
-        "TELEGRAM_ALLOWED_USER_IDS=$allowedIds"
+        if ($allowedIds) {
+            "TELEGRAM_ALLOWED_USER_IDS=$allowedIds"
+        }
+        else {
+            $line
+        }
     }
     else {
         $line
