@@ -117,10 +117,14 @@ ssh display@ad-eink-pi "sudo /opt/abu-dhabi-eink/install-waveshare-10in85.sh --e
 This writes `/etc/default/ad-eink-display` with:
 
 ```text
-AD_EINK_DRIVER_ARGS="--driver-lib /opt/abu-dhabi-eink/vendor/waveshare-10in85/RaspberryPi/python/lib --driver-module waveshare_epd.epd10in85"
+WAVESHARE_10IN85_VENDOR_LIB="/opt/abu-dhabi-eink/vendor/waveshare-10in85/RaspberryPi/python/lib"
+WAVESHARE_10IN85_SPI_HZ="2000000"
+AD_EINK_DRIVER_ARGS="--driver-lib /opt/abu-dhabi-eink --driver-module waveshare_10in85_bw"
 ```
 
 Then reloads and restarts `ad-eink-display.service`.
+
+The service uses a local `waveshare_10in85_bw` adapter instead of calling the vendored module directly. The 10.85inch display uses two controller halves, so the adapter splits each packed `1360x480` frame row-by-row into master/slave buffers, loads both halves, then performs one shared refresh. The default SPI rate is reduced to `2MHz`; if the right half shows data-loss artifacts, test `1MHz` before changing UI code.
 
 The Waveshare Python GPIO stack is run by the display service with root privileges. The vendor driver needs GPIO edge-detection access for the panel busy pin; running it as the unprivileged `display` user can fail with `RuntimeError: Failed to add edge detection` even when the user belongs to the `gpio` group.
 

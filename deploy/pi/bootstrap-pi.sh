@@ -46,12 +46,14 @@ fi
 echo "Creating runtime directories"
 sudo mkdir -p "${INSTALL_DIR}" "${STATE_DIR}" "${LOG_DIR}"
 sudo cp "${SCRIPT_DIR}/display-current.py" "${INSTALL_DIR}/display-current.py"
+sudo cp "${SCRIPT_DIR}/waveshare_10in85_bw.py" "${INSTALL_DIR}/waveshare_10in85_bw.py"
 sudo cp "${SCRIPT_DIR}/run-display-current.sh" "${INSTALL_DIR}/run-display-current.sh"
 sudo cp "${SCRIPT_DIR}/install-waveshare-10in85.sh" "${INSTALL_DIR}/install-waveshare-10in85.sh"
 sudo cp "${SCRIPT_DIR}/shutdown-display.sh" "${INSTALL_DIR}/shutdown-display.sh"
 sudo cp "${SCRIPT_DIR}/${SERVICE_NAME}" "/etc/systemd/system/${SERVICE_NAME}"
 sudo chown -R display:display "${STATE_DIR}" "${LOG_DIR}" || true
 sudo chmod +x "${INSTALL_DIR}/display-current.py"
+sudo chmod +x "${INSTALL_DIR}/waveshare_10in85_bw.py"
 sudo chmod +x "${INSTALL_DIR}/run-display-current.sh" "${INSTALL_DIR}/install-waveshare-10in85.sh" "${INSTALL_DIR}/shutdown-display.sh"
 
 if id display >/dev/null 2>&1; then

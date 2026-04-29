@@ -55,7 +55,9 @@ echo "Driver library installed at ${driver_lib}"
 
 if [[ "${ENABLE_SERVICE}" == "1" ]]; then
   sudo tee /etc/default/ad-eink-display >/dev/null <<EOF
-AD_EINK_DRIVER_ARGS="--driver-lib ${driver_lib} --driver-module waveshare_epd.epd10in85"
+WAVESHARE_10IN85_VENDOR_LIB="${driver_lib}"
+WAVESHARE_10IN85_SPI_HZ="2000000"
+AD_EINK_DRIVER_ARGS="--driver-lib /opt/abu-dhabi-eink --driver-module waveshare_10in85_bw"
 EOF
   sudo systemctl daemon-reload
   sudo systemctl restart ad-eink-display.service
@@ -65,5 +67,7 @@ else
   echo "After connecting the HAT/display, enable hardware output with:"
   echo "  sudo /opt/abu-dhabi-eink/install-waveshare-10in85.sh --enable-service"
   echo "or set /etc/default/ad-eink-display to:"
-  echo "  AD_EINK_DRIVER_ARGS=\"--driver-lib ${driver_lib} --driver-module waveshare_epd.epd10in85\""
+  echo "  WAVESHARE_10IN85_VENDOR_LIB=\"${driver_lib}\""
+  echo "  WAVESHARE_10IN85_SPI_HZ=\"2000000\""
+  echo "  AD_EINK_DRIVER_ARGS=\"--driver-lib /opt/abu-dhabi-eink --driver-module waveshare_10in85_bw\""
 fi

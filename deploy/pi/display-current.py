@@ -23,10 +23,17 @@ def sha256_file(path: Path) -> str:
 
 
 class EInkDriver:
-    def __init__(self, module_name: str | None, driver_lib: str | None, dry_run: bool) -> None:
+    def __init__(
+        self,
+        module_name: str | None,
+        driver_lib: str | None,
+        dry_run: bool,
+        disable_partial: bool,
+    ) -> None:
         self.module_name = module_name
         self.driver_lib = driver_lib
         self.dry_run = dry_run or not module_name
+        self.disable_partial = disable_partial
         self.epd = None
         self.partial_ready = False
 
@@ -64,7 +71,7 @@ class EInkDriver:
             self.epd.init()
             self.partial_ready = False
 
-        if not full_refresh and hasattr(self.epd, "display_Partial"):
+        if not full_refresh and not self.disable_partial and hasattr(self.epd, "display_Partial"):
             if not self.partial_ready and hasattr(self.epd, "init_Part"):
                 self.epd.init_Part()
                 self.partial_ready = True
@@ -114,6 +121,11 @@ def main() -> int:
     parser.add_argument("--max-frame-age-seconds", type=float, default=50.0)
     parser.add_argument("--driver-module", default=None, help="Vendor Python module exposing EPD, for example waveshare_epd.epd13in3.")
     parser.add_argument("--driver-lib", default=None, help="Directory to prepend to PYTHONPATH before importing the driver module.")
+    parser.add_argument(
+        "--disable-partial",
+        action="store_true",
+        help="Always use the driver's full-frame display path. Recommended for split-controller panels with unreliable partial refresh.",
+    )
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--log-file", default="/var/log/abu-dhabi-eink/display-current.log")
@@ -124,7 +136,7 @@ def main() -> int:
     configure_logging(Path(args.log_file) if args.log_file else None, args.log_max_bytes, args.log_backups)
 
     frame_path = Path(args.image)
-    driver = EInkDriver(args.driver_module, args.driver_lib, args.dry_run)
+    driver = EInkDriver(args.driver_module, args.driver_lib, args.dry_run, args.disable_partial)
     driver.open()
 
     last_digest = ""

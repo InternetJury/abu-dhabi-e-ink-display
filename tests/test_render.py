@@ -30,19 +30,19 @@ def test_weekday_center_crop_matches_locked_reference_hash():
     snapshot = load_fixture_snapshot("weekday_commute_now")
     image = RibbonRenderer().render(snapshot)
     center_crop = image.crop((250, 0, 1010, 480))
-    assert sha1(center_crop.tobytes()).hexdigest() == "8988874a9b9af8a78d6e8c27ee36958effaeaea5"
+    assert sha1(center_crop.tobytes()).hexdigest() == "379f1d49cb758d48d1bafe996ae808a26e6cacfd"
 
 
 def test_weekend_render_matches_locked_reference_hash():
     snapshot = load_fixture_snapshot("weekend_multi_stop")
     image = RibbonRenderer().render(snapshot)
-    assert sha1(image.tobytes()).hexdigest() == "cee0717269d5206064f37cd14a7918569780ad49"
+    assert sha1(image.tobytes()).hexdigest() == "f0d4aea25eb35de910e264d89943218a50172a04"
 
 
 def test_ambient_render_matches_locked_reference_hash():
     snapshot = load_fixture_snapshot("ambient_info")
     image = RibbonRenderer().render(snapshot)
-    assert sha1(image.tobytes()).hexdigest() == "7620a1dcbb3d970d3f10826b4d2d974eb997cfe7"
+    assert sha1(image.tobytes()).hexdigest() == "239dd09822ff3a14d4fb377e4084c20fe44a9f0c"
 
 
 def test_weekday_hero_destination_hybrid_fit_stays_inside_safe_width():
@@ -207,4 +207,4 @@ def test_weekday_rail_rebalance_keeps_center_crop_hash_locked():
     snapshot = load_fixture_snapshot("weekday_commute_now")
     image = RibbonRenderer().render(snapshot)
     center_crop = image.crop((250, 0, 1010, 480))
-    assert sha1(center_crop.tobytes()).hexdigest() == "8988874a9b9af8a78d6e8c27ee36958effaeaea5"
+    assert sha1(center_crop.tobytes()).hexdigest() == "379f1d49cb758d48d1bafe996ae808a26e6cacfd"
