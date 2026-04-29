@@ -122,6 +122,8 @@ AD_EINK_DRIVER_ARGS="--driver-lib /opt/abu-dhabi-eink/vendor/waveshare-10in85/Ra
 
 Then reloads and restarts `ad-eink-display.service`.
 
+The Waveshare Python GPIO stack is run by the display service with root privileges. The vendor driver needs GPIO edge-detection access for the panel busy pin; running it as the unprivileged `display` user can fail with `RuntimeError: Failed to add edge detection` even when the user belongs to the `gpio` group.
+
 If you need to return to checksum mode before hardware is connected, reset the environment file:
 
 ```powershell

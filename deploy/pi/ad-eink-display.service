@@ -5,8 +5,6 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=display
-Group=display
 Environment=PYTHONUNBUFFERED=1
 EnvironmentFile=-/etc/default/ad-eink-display
 ExecStart=/opt/abu-dhabi-eink/run-display-current.sh
