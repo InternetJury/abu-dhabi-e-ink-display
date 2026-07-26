@@ -70,5 +70,5 @@ else
   echo "or set /etc/default/ad-eink-display to:"
   echo "  WAVESHARE_10IN85_VENDOR_LIB=\"${driver_lib}\""
   echo "  WAVESHARE_10IN85_SPI_HZ=\"2000000\""
-  echo "  AD_EINK_DRIVER_ARGS=\"--driver-lib /opt/abu-dhabi-eink --driver-module waveshare_10in85_bw --startup-delay-seconds 5 --startup-full-refresh-count 1 --disable-partial --require-current-minute --latest-display-start-second 45\""
+  echo "  AD_EINK_DRIVER_ARGS=\"--driver-lib /opt/abu-dhabi-eink --driver-module waveshare_10in85_bw --startup-delay-seconds 5 --clear-on-start --startup-full-refresh-count 1 --full-refresh-seconds 300 --monochrome-threshold 200 --require-current-minute --latest-display-start-second 45\""
 fi

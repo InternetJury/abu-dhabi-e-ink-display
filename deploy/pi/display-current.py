@@ -18,6 +18,13 @@ from typing import Callable
 from PIL import Image
 
 
+def to_monochrome(image: Image.Image, threshold: int = 200) -> Image.Image:
+    if not 0 <= threshold <= 255:
+        raise ValueError("monochrome threshold must be between 0 and 255")
+    grayscale = image.convert("L")
+    return grayscale.point(lambda value: 0 if value < threshold else 255, mode="1")
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -33,11 +40,13 @@ class EInkDriver:
         driver_lib: str | None,
         dry_run: bool,
         disable_partial: bool,
+        monochrome_threshold: int = 200,
     ) -> None:
         self.module_name = module_name
         self.driver_lib = driver_lib
         self.dry_run = dry_run or not module_name
         self.disable_partial = disable_partial
+        self.monochrome_threshold = monochrome_threshold
         self.epd = None
         self.partial_ready = False
         self._is_open = False
@@ -73,7 +82,7 @@ class EInkDriver:
             raise RuntimeError("Display driver has not been opened.")
 
         requested_mode = "partial" if partial else "full"
-        if self._initialized_mode == requested_mode:
+        if self._initialized_mode == requested_mode and not partial:
             return
 
         init = getattr(self.epd, "init_Part" if partial else "init", None)
@@ -140,7 +149,7 @@ class EInkDriver:
         if self.epd is None:
             raise RuntimeError("Display driver has not been opened.")
 
-        frame = image.convert("1")
+        frame = to_monochrome(image, self.monochrome_threshold)
         getbuffer = getattr(self.epd, "getbuffer", None)
         payload = getbuffer(frame) if callable(getbuffer) else frame
 
@@ -412,6 +421,12 @@ def main() -> int:
         action="store_true",
         help="Always use the driver's full-frame display path. Recommended for split-controller panels with unreliable partial refresh.",
     )
+    parser.add_argument(
+        "--monochrome-threshold",
+        type=int,
+        default=200,
+        help="Convert grayscale pixels below this value to solid black without dithering.",
+    )
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--log-file", default="/var/log/abu-dhabi-eink/display-current.log")
@@ -422,7 +437,13 @@ def main() -> int:
     configure_logging(Path(args.log_file) if args.log_file else None, args.log_max_bytes, args.log_backups)
 
     frame_path = Path(args.image)
-    driver = EInkDriver(args.driver_module, args.driver_lib, args.dry_run, args.disable_partial)
+    driver = EInkDriver(
+        args.driver_module,
+        args.driver_lib,
+        args.dry_run,
+        args.disable_partial,
+        args.monochrome_threshold,
+    )
     state = DisplayState(startup_full_refreshes_remaining=max(0, args.startup_full_refresh_count))
     process_lock = ProcessLock(args.lock_file)
     stop_requested = False

@@ -155,9 +155,11 @@ def test_waveshare_install_uses_local_dual_controller_adapter():
     assert "waveshare_10in85_c_bridge" not in script
     assert "waveshare-10in85-display-raw" not in script
     assert "SPI_line 0" not in script
-    assert "--clear-on-start" not in environment
+    assert "--clear-on-start" in environment
     assert "--startup-full-refresh-count 1" in environment
-    assert "--disable-partial" in environment
+    assert "--disable-partial" not in environment
+    assert "--full-refresh-seconds 300" in environment
+    assert "--monochrome-threshold 200" in environment
     assert "--require-current-minute" in environment
     assert "--latest-display-start-second 45" in environment
 

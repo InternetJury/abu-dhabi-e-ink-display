@@ -9,7 +9,7 @@ This runbook covers the black/white `1360x480` Waveshare 10.85-inch e-Paper HAT+
 - Interface switch: `0 / 4-line SPI`, with both CE0 and CE1 exposed as `/dev/spidev0.0` and `/dev/spidev0.1`.
 - Driver: Waveshare `waveshare_epd.epd10in85` behind the local `waveshare_10in85_bw` row-splitting adapter.
 - SPI rate: `2MHz`.
-- Runtime: full-frame updates only; partial refresh disabled until separately qualified.
+- Runtime: coordinated row-streamed partial updates, with startup and five-minute full normalization refreshes.
 - Frame: exactly `1360x480`, 1-bit conversion performed by the Pi client.
 
 The adapter loads old and new RAM for the master and slave halves independently and issues one shared refresh only after both new buffers are loaded.
@@ -21,7 +21,7 @@ The panel rendered both halves successfully before a controlled Pi shutdown. Aft
 Those experimental paths are not part of production. The runtime has been returned to the last-known-working adapter and hardened so that:
 
 1. frame existence, age, digest, and dimensions are checked before vendor import/init;
-2. the first fresh frame after restart is a full refresh;
+2. the first fresh frame after restart is a full refresh followed immediately by a same-frame coordinated partial normalization pass;
 3. stale frames never power the HAT;
 4. failed initialization or writes close/sleep the driver;
 5. idle hardware is put to sleep;

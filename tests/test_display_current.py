@@ -182,6 +182,43 @@ def test_first_full_display_initializes_panel_exactly_once(monkeypatch):
     assert calls[-1] == "display"
 
 
+def test_monochrome_conversion_uses_deterministic_threshold_without_dithering():
+    image = Image.new("L", (4, 1))
+    image.putdata([0, 199, 200, 255])
+
+    converted = display_current.to_monochrome(image, threshold=200)
+
+    assert [converted.getpixel((x, 0)) for x in range(4)] == [0, 0, 255, 255]
+
+
+def test_partial_mode_reinitializes_before_every_frame(monkeypatch):
+    calls: list[str] = []
+
+    class FakeEPD:
+        width = 1360
+        height = 480
+
+        def init_Part(self):
+            calls.append("init_part")
+
+        def getbuffer(self, image):
+            return image
+
+        def display_Partial(self, _payload, _x0, _y0, _x1, _y1):
+            calls.append("partial")
+
+    fake_module = types.SimpleNamespace(EPD=FakeEPD)
+    monkeypatch.setattr(display_current.importlib, "import_module", lambda _name: fake_module)
+
+    driver = display_current.EInkDriver("fake_epd", None, False, False)
+    driver.open()
+    frame = Image.new("1", (1360, 480), 255)
+    driver.display(frame, full_refresh=False)
+    driver.display(frame, full_refresh=False)
+
+    assert calls == ["init_part", "partial", "init_part", "partial"]
+
+
 def test_hardware_is_closed_after_idle_timeout():
     driver = FakeDriver()
     driver.open()

@@ -150,7 +150,7 @@ The current provider/scheduler stack and device runtime are sufficient for publi
 
 - Darbi remains a live web dependency and therefore operationally brittle compared with a formal public API
 - most application settings remain code-configured rather than fully externalized
-- dual-controller partial refresh remains deliberately disabled; production uses the safer full-frame path
+- dual-controller partial refresh uses bounded row transfers, coordinated old/new RAM writes, and one shared refresh; each startup/five-minute full refresh is immediately followed by a same-frame coordinated partial pass so both halves finish at equal contrast
 
 The Phase 2 implementation and remaining deployment acceptance work are tracked in [docs/phase-status.md](docs/phase-status.md).
 

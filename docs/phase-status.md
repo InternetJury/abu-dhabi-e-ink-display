@@ -32,7 +32,7 @@ Implemented:
 - Raspberry Pi `systemd` display client
 - Waveshare 10.85-inch B/W dual-controller adapter
 - stale/off-minute frame rejection before hardware initialization
-- mandatory full refresh after service restart
+- mandatory full refresh after service restart, followed by a same-frame dual-controller contrast-normalization pass
 - safe panel sleep after idle or service shutdown
 - private Telegram status and confirmed-shutdown control
 
@@ -45,7 +45,7 @@ Current deployment acceptance status:
 
 Optional future improvements:
 
-- qualify dual-controller partial refresh separately; production currently uses full-frame refresh for reliability
+- monitor the qualified dual-controller partial path over long runtimes; production performs bounded partial updates with a five-minute full normalization
 - broader telemetry and alerting
 - packaged installers/releases for additional target devices
 - fully externalized application settings

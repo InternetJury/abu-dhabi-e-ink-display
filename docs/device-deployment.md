@@ -11,7 +11,7 @@ The locked templates do not change. The A6 renders a finished `1360x480` PNG eve
 - Transport: SSH/SCP over Tailscale
 - Frame path on A6: `C:\AbuDhabiEInk\frames\current.png`
 - Frame path on Pi: `/var/lib/abu-dhabi-eink/current.png`
-- Refresh cadence: render on minute boundaries; use full-frame refresh for each accepted minute while partial refresh remains quarantined
+- Refresh cadence: render on minute boundaries; use coordinated dual-controller partial refreshes between five-minute full refreshes
 
 ## 1. Prepare the microSD
 
@@ -119,12 +119,12 @@ This writes `/etc/default/ad-eink-display` with:
 ```text
 WAVESHARE_10IN85_VENDOR_LIB="/opt/abu-dhabi-eink/vendor/waveshare-10in85/RaspberryPi/python/lib"
 WAVESHARE_10IN85_SPI_HZ="2000000"
-AD_EINK_DRIVER_ARGS="--driver-lib /opt/abu-dhabi-eink --driver-module waveshare_10in85_bw --startup-delay-seconds 5 --startup-full-refresh-count 1 --disable-partial --require-current-minute --latest-display-start-second 45"
+AD_EINK_DRIVER_ARGS="--driver-lib /opt/abu-dhabi-eink --driver-module waveshare_10in85_bw --startup-delay-seconds 5 --clear-on-start --startup-full-refresh-count 1 --full-refresh-seconds 300 --monochrome-threshold 200 --require-current-minute --latest-display-start-second 45"
 ```
 
 Then reloads and restarts `ad-eink-display.service`.
 
-The service uses a local `waveshare_10in85_bw` adapter instead of calling the vendored module directly. The 10.85inch display uses two controller halves, so the adapter splits each packed `1360x480` frame row-by-row into master/slave buffers, loads both halves, then performs one shared refresh. The default SPI rate is `2MHz`, matching the last-known-working deployment. Production uses full-frame refresh only while dual-controller partial refresh remains disabled.
+The service uses a local `waveshare_10in85_bw` adapter instead of calling the vendored module directly. The 10.85inch display uses two controller halves, so the adapter splits each packed `1360x480` frame row-by-row into master/slave buffers, loads both halves, then performs one shared refresh. The default SPI rate is `2MHz`. Startup performs a row-streamed white clear and a full refresh; every full refresh finishes with an immediate same-frame coordinated partial pass so the master and slave halves settle at equal contrast. Minute updates use coordinated partial refreshes, with another full-plus-normalization cycle every five minutes. Grayscale is converted with a deterministic threshold rather than controller-sensitive dithering.
 
 The client validates file age, render minute, safe refresh-start cutoff, and PNG dimensions before importing or initializing the hardware driver. A stale or previous-minute frame therefore cannot power the panel after reboot. The first valid frame after service start is forced through the full-refresh path, the panel is put to sleep if publishing stops, and an OS lock prevents more than one process from writing GPIO/SPI.
 

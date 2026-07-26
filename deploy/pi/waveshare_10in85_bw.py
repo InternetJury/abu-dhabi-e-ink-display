@@ -5,6 +5,7 @@ import importlib
 import logging
 import os
 import sys
+import time
 from pathlib import Path
 from typing import Sequence
 
@@ -15,6 +16,7 @@ HALF_ROW_BYTES = WIDTH // 16
 HALF_BUFFER_BYTES = HALF_ROW_BYTES * HEIGHT
 DEFAULT_SPI_HZ = 2_000_000
 DEFAULT_VENDOR_LIB = "/opt/abu-dhabi-eink/vendor/waveshare-10in85/RaspberryPi/python/lib"
+FULL_TO_PARTIAL_SETTLE_SECONDS = 2.0
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +110,16 @@ class EPD:
     def display(self, imageblack: Sequence[int]) -> None:
         master, slave = split_packed_buffer(imageblack)
         self._write_full(master, slave)
+        # The panel's full waveform can leave the slave half visibly lighter.
+        # Finish with one coordinated partial write so both controllers expose
+        # the same final contrast after startup and periodic full refreshes.
+        time.sleep(FULL_TO_PARTIAL_SETTLE_SECONDS)
+        self.init_Part()
+        self._write_partial(master, slave)
+
+    def Clear(self) -> None:
+        white = [0xFF] * HALF_BUFFER_BYTES
+        self._write_full(white, white)
         self._old_master_ready = True
         self._old_slave_ready = True
 
@@ -147,12 +159,12 @@ class EPD:
 
         if not self._old_master_ready:
             self._epd.send_command_M(0x10)
-            self._epd.send_data2_M([0xFF] * len(master))
+            self._stream_rows(self._epd.send_data2_M, [0xFF] * len(master))
             self._old_master_ready = True
 
         if not self._old_slave_ready:
             self._epd.send_command_S(0x10)
-            self._epd.send_data2_S([0xFF] * len(slave))
+            self._stream_rows(self._epd.send_data2_S, [0xFF] * len(slave))
             self._old_slave_ready = True
 
         self._load_new_data(master, slave)
@@ -177,12 +189,12 @@ class EPD:
 
     def _load_new_data(self, master: Sequence[int], slave: Sequence[int]) -> None:
         self._epd.send_command_M(0x13)
-        self._epd.send_data2_M(master)
+        self._stream_rows(self._epd.send_data2_M, master)
         self._epd.send_command_S(0x13)
-        self._epd.send_data2_S(slave)
+        self._stream_rows(self._epd.send_data2_S, slave)
 
     def _update_old_data(self, master: Sequence[int], slave: Sequence[int]) -> None:
         self._epd.send_command_M(0x10)
-        self._epd.send_data2_M(master)
+        self._stream_rows(self._epd.send_data2_M, master)
         self._epd.send_command_S(0x10)
-        self._epd.send_data2_S(slave)
+        self._stream_rows(self._epd.send_data2_S, slave)
