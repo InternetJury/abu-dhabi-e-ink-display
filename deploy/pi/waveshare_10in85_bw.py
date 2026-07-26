@@ -11,6 +11,8 @@ from typing import Sequence
 
 WIDTH = 1360
 HEIGHT = 480
+HALF_ROW_BYTES = WIDTH // 16
+HALF_BUFFER_BYTES = HALF_ROW_BYTES * HEIGHT
 DEFAULT_SPI_HZ = 2_000_000
 DEFAULT_VENDOR_LIB = "/opt/abu-dhabi-eink/vendor/waveshare-10in85/RaspberryPi/python/lib"
 
@@ -41,13 +43,7 @@ def split_packed_buffer(buffer: Sequence[int], width: int = WIDTH, height: int =
 
 
 class EPD:
-    """Hardware adapter for the black/white Waveshare 10.85inch dual-IC panel.
-
-    The stock driver exposes a generic full/partial API, but this panel needs
-    master and slave controller RAM loaded independently before one shared
-    refresh command. Keeping this adapter outside the vendored driver lets us
-    update Waveshare's package without losing the local split-controller patch.
-    """
+    """Last-known-working adapter for the B/W Waveshare 10.85in dual-IC panel."""
 
     width = WIDTH
     height = HEIGHT
@@ -89,14 +85,22 @@ class EPD:
     def init(self):
         self._old_master_ready = False
         self._old_slave_ready = False
-        return self._epd.init()
+        result = self._epd.init()
+        # A cold boot can leave either controller on its power-on geometry even
+        # though the vendor init succeeds. Reassert each 680x480 half before RAM
+        # writes so master and slave advance through identical row boundaries.
+        self._set_full_half_windows()
+        return result
 
     def init_Part(self):
         self._old_master_ready = False
         self._old_slave_ready = False
         if hasattr(self._epd, "init_Part"):
-            return self._epd.init_Part()
-        return self._epd.init()
+            result = self._epd.init_Part()
+        else:
+            result = self._epd.init()
+        self._set_full_half_windows()
+        return result
 
     def getbuffer(self, image):
         return self._epd.getbuffer(image)
@@ -121,14 +125,22 @@ class EPD:
 
     def _write_full(self, master: Sequence[int], slave: Sequence[int]) -> None:
         self._epd.send_command_M(0x10)
-        self._epd.send_data2_M([0xFF] * len(master))
-        self._epd.send_command_S(0x10)
-        self._epd.send_data2_S([0xFF] * len(slave))
+        self._stream_rows(self._epd.send_data2_M, [0xFF] * HALF_BUFFER_BYTES)
+        self._epd.send_command_M(0x13)
+        self._stream_rows(self._epd.send_data2_M, master)
 
-        self._load_new_data(master, slave)
+        self._epd.send_command_S(0x10)
+        self._stream_rows(self._epd.send_data2_S, [0xFF] * HALF_BUFFER_BYTES)
+        self._epd.send_command_S(0x13)
+        self._stream_rows(self._epd.send_data2_S, slave)
         self._epd.TurnOnDisplay()
 
-        self._update_old_data(master, slave)
+    @staticmethod
+    def _stream_rows(send_data, data: Sequence[int]) -> None:
+        if len(data) != HALF_BUFFER_BYTES:
+            raise ValueError(f"expected {HALF_BUFFER_BYTES} bytes for one controller half, got {len(data)}")
+        for row_start in range(0, HALF_BUFFER_BYTES, HALF_ROW_BYTES):
+            send_data(data[row_start : row_start + HALF_ROW_BYTES])
 
     def _write_partial(self, master: Sequence[int], slave: Sequence[int]) -> None:
         self._set_full_half_windows()

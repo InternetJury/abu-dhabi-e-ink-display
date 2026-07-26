@@ -4,6 +4,7 @@ set -euo pipefail
 INSTALL_ROOT="/opt/abu-dhabi-eink/vendor/waveshare-10in85"
 DEMO_URL="https://files.waveshare.com/wiki/10.85inch_e-Paper_HAT%2B/10.85inch_e-Paper.zip"
 ENABLE_SERVICE="0"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -54,11 +55,11 @@ PY
 echo "Driver library installed at ${driver_lib}"
 
 if [[ "${ENABLE_SERVICE}" == "1" ]]; then
-  sudo tee /etc/default/ad-eink-display >/dev/null <<EOF
-WAVESHARE_10IN85_VENDOR_LIB="${driver_lib}"
-WAVESHARE_10IN85_SPI_HZ="2000000"
-AD_EINK_DRIVER_ARGS="--driver-lib /opt/abu-dhabi-eink --driver-module waveshare_10in85_bw"
-EOF
+  if [[ ! -f "${SCRIPT_DIR}/ad-eink-display.defaults" ]]; then
+    echo "Missing ${SCRIPT_DIR}/ad-eink-display.defaults; rerun Pi bootstrap from a complete deployment folder." >&2
+    exit 1
+  fi
+  sudo install -m 0644 "${SCRIPT_DIR}/ad-eink-display.defaults" /etc/default/ad-eink-display
   sudo systemctl daemon-reload
   sudo systemctl restart ad-eink-display.service
   echo "ad-eink-display.service is now configured for Waveshare epd10in85."
@@ -69,5 +70,5 @@ else
   echo "or set /etc/default/ad-eink-display to:"
   echo "  WAVESHARE_10IN85_VENDOR_LIB=\"${driver_lib}\""
   echo "  WAVESHARE_10IN85_SPI_HZ=\"2000000\""
-  echo "  AD_EINK_DRIVER_ARGS=\"--driver-lib /opt/abu-dhabi-eink --driver-module waveshare_10in85_bw\""
+  echo "  AD_EINK_DRIVER_ARGS=\"--driver-lib /opt/abu-dhabi-eink --driver-module waveshare_10in85_bw --startup-delay-seconds 5 --startup-full-refresh-count 1 --disable-partial --require-current-minute --latest-display-start-second 45\""
 fi

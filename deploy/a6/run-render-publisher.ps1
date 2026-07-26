@@ -3,8 +3,13 @@ param(
     [string]$PiHost = "ad-eink-pi",
     [string]$PiUser = "display",
     [string]$RemotePath = "/var/lib/abu-dhabi-eink/current.png",
+    [string]$IdentityFile = "",
+    [string]$KnownHostsFile = "",
     [int]$SleepSeconds = 60,
-    [int]$MaxFrameAgeSeconds = 45,
+    [int]$MaxFrameAgeSeconds = 30,
+    [int]$RenderTimeoutSeconds = 35,
+    [int]$PublishCommandTimeoutSeconds = 12,
+    [int]$EndToEndDeadlineSeconds = 42,
     [int]$LogRetentionDays = 14,
     [switch]$NoMinuteAlignment,
     [switch]$SkipPublish,
@@ -16,11 +21,21 @@ $ErrorActionPreference = "Stop"
 $appDir = Join-Path $InstallRoot "app"
 $framesDir = Join-Path $InstallRoot "frames"
 $logsDir = Join-Path $InstallRoot "logs"
+$secretsDir = Join-Path $InstallRoot "secrets"
 $cli = Join-Path $appDir ".venv\Scripts\mobility-ribbon.exe"
 $currentFrame = Join-Path $framesDir "current.png"
 $tempFrame = Join-Path $framesDir "current.tmp.png"
 
-New-Item -ItemType Directory -Force -Path $framesDir, $logsDir | Out-Null
+if ([string]::IsNullOrWhiteSpace($IdentityFile)) {
+    $IdentityFile = Join-Path $secretsDir "publisher_ed25519"
+}
+if ([string]::IsNullOrWhiteSpace($KnownHostsFile)) {
+    $KnownHostsFile = Join-Path $secretsDir "publisher_known_hosts"
+}
+
+$env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $InstallRoot "playwright"
+
+New-Item -ItemType Directory -Force -Path $framesDir, $logsDir, $secretsDir | Out-Null
 
 function Invoke-StorageCleanup {
     $cutoff = (Get-Date).AddDays(-1 * $LogRetentionDays)
@@ -61,7 +76,83 @@ function Write-Log {
     Write-Host $line
 }
 
+function ConvertTo-ArgumentString {
+    param([Parameter(Mandatory = $true)][string[]]$Arguments)
+
+    return ($Arguments | ForEach-Object {
+        if ($_ -notmatch '[\s"]') {
+            $_
+        }
+        else {
+            '"' + ($_ -replace '"', '\"') + '"'
+        }
+    }) -join " "
+}
+
+function Invoke-ExternalCommand {
+    param(
+        [Parameter(Mandatory = $true)][string]$FilePath,
+        [Parameter(Mandatory = $true)][string[]]$Arguments,
+        [Parameter(Mandatory = $true)][int]$TimeoutSeconds,
+        [Parameter(Mandatory = $true)][string]$Description
+    )
+
+    $argumentString = ConvertTo-ArgumentString -Arguments $Arguments
+    $process = New-Object System.Diagnostics.Process
+    $process.StartInfo = New-Object System.Diagnostics.ProcessStartInfo
+    $process.StartInfo.FileName = $FilePath
+    $process.StartInfo.Arguments = $argumentString
+    $process.StartInfo.UseShellExecute = $false
+    # Inheriting the scheduled-task streams avoids a pipe-buffer deadlock when
+    # a renderer or SSH process produces more output than WaitForExit can drain.
+    $process.StartInfo.RedirectStandardOutput = $false
+    $process.StartInfo.RedirectStandardError = $false
+    $process.StartInfo.CreateNoWindow = $true
+
+    try {
+        if (-not $process.Start()) {
+            throw "$Description failed to start."
+        }
+
+        if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+            try {
+                # Kill the whole renderer/browser or SSH process tree, not only
+                # the parent that the scheduled task happens to be waiting on.
+                & taskkill.exe /PID $process.Id /T /F 2>$null | Out-Null
+            }
+            catch {
+                # Best effort: the caller will retry on the next aligned slot.
+            }
+            throw "$Description timed out after $TimeoutSeconds seconds."
+        }
+
+        if ($process.ExitCode -ne 0) {
+            throw "$Description failed with exit code $($process.ExitCode)."
+        }
+    }
+    finally {
+        if ($null -ne $process) {
+            $process.Dispose()
+        }
+    }
+}
+
+function Get-RemainingDeadlineSeconds {
+    param([Parameter(Mandatory = $true)][datetime]$CycleStarted)
+
+    $remaining = $EndToEndDeadlineSeconds - ((Get-Date) - $CycleStarted).TotalSeconds
+    if ($remaining -lt 1) {
+        throw "Frame missed the $EndToEndDeadlineSeconds-second end-to-end publish deadline."
+    }
+    return [Math]::Max(1, [int][Math]::Floor([Math]::Min($PublishCommandTimeoutSeconds, $remaining)))
+}
+
 function Publish-Frame {
+    param(
+        [Parameter(Mandatory = $true)][datetime]$CycleStarted,
+        [Parameter(Mandatory = $true)][long]$RenderedAtUnixSeconds
+    )
+
     if ($SkipPublish) {
         Write-Log "SkipPublish set; frame kept locally at $currentFrame"
         return
@@ -70,25 +161,52 @@ function Publish-Frame {
     $remoteDir = Split-Path -Parent $RemotePath
     $remoteTmp = "$RemotePath.tmp"
     $remote = "$($PiUser)@$($PiHost)"
+    $sshOptions = @(
+        "-i", $IdentityFile,
+        "-o", "BatchMode=yes",
+        "-o", "IdentitiesOnly=yes",
+        "-o", "StrictHostKeyChecking=accept-new",
+        "-o", "UserKnownHostsFile=$KnownHostsFile",
+        "-o", "ConnectTimeout=8",
+        "-o", "ServerAliveInterval=5",
+        "-o", "ServerAliveCountMax=2"
+    )
+    $scpOptions = @(
+        "-q",
+        "-i", $IdentityFile,
+        "-o", "BatchMode=yes",
+        "-o", "IdentitiesOnly=yes",
+        "-o", "StrictHostKeyChecking=accept-new",
+        "-o", "UserKnownHostsFile=$KnownHostsFile",
+        "-o", "ConnectTimeout=8",
+        "-o", "ServerAliveInterval=5",
+        "-o", "ServerAliveCountMax=2"
+    )
 
-    & ssh $remote "mkdir -p '$remoteDir'"
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to create remote frame directory on $remote."
-    }
+    Invoke-ExternalCommand `
+        -FilePath "ssh" `
+        -Arguments ($sshOptions + @($remote, "mkdir -p '$remoteDir'")) `
+        -TimeoutSeconds (Get-RemainingDeadlineSeconds -CycleStarted $CycleStarted) `
+        -Description "remote frame directory check on $remote"
 
-    & scp -q $currentFrame "$($remote):$remoteTmp"
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to copy frame to $remote."
-    }
+    Invoke-ExternalCommand `
+        -FilePath "scp" `
+        -Arguments ($scpOptions + @($currentFrame, "$($remote):$remoteTmp")) `
+        -TimeoutSeconds (Get-RemainingDeadlineSeconds -CycleStarted $CycleStarted) `
+        -Description "frame copy to $remote"
 
-    & ssh $remote "mv '$remoteTmp' '$RemotePath'"
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to publish frame atomically on $remote."
-    }
+    Invoke-ExternalCommand `
+        -FilePath "ssh" `
+        -Arguments ($sshOptions + @($remote, "touch -m -d '@$RenderedAtUnixSeconds' '$remoteTmp' && mv -f '$remoteTmp' '$RemotePath'")) `
+        -TimeoutSeconds (Get-RemainingDeadlineSeconds -CycleStarted $CycleStarted) `
+        -Description "atomic frame publish on $remote"
 }
 
 if (-not (Test-Path $cli)) {
     throw "mobility-ribbon executable not found at $cli. Run deploy\a6\install-a6.ps1 first."
+}
+if (-not $SkipPublish -and -not (Test-Path -LiteralPath $IdentityFile)) {
+    throw "Publisher SSH key not found at $IdentityFile. Run deploy\a6\install-a6.ps1 first."
 }
 
 do {
@@ -97,10 +215,11 @@ do {
         Wait-UntilNextRenderSlot
 
         $renderStarted = Get-Date
-        & $cli render-live --output $tempFrame --use-playwright-fallback
-        if ($LASTEXITCODE -ne 0) {
-            throw "render-live failed with exit code $LASTEXITCODE."
-        }
+        Invoke-ExternalCommand `
+            -FilePath $cli `
+            -Arguments @("render-live", "--output", $tempFrame, "--use-playwright-fallback") `
+            -TimeoutSeconds $RenderTimeoutSeconds `
+            -Description "render-live"
 
         $renderAgeSeconds = ((Get-Date) - $renderStarted).TotalSeconds
         if ($renderAgeSeconds -gt $MaxFrameAgeSeconds) {
@@ -117,7 +236,8 @@ do {
         }
 
         Move-Item -Path $tempFrame -Destination $currentFrame -Force
-        Publish-Frame
+        $renderedAtUnixSeconds = [DateTimeOffset]::new($renderStarted).ToUnixTimeSeconds()
+        Publish-Frame -CycleStarted $renderStarted -RenderedAtUnixSeconds $renderedAtUnixSeconds
         Write-Log (
             "Rendered and published $currentFrame to $($PiUser)@$($PiHost):$RemotePath in {0:N1}s" -f
             $renderAgeSeconds

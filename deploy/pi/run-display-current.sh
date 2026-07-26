@@ -13,5 +13,7 @@ fi
 # shellcheck disable=SC2086
 exec /usr/bin/python3 /opt/abu-dhabi-eink/display-current.py \
   --image /var/lib/abu-dhabi-eink/current.png \
+  --lock-file /run/abu-dhabi-eink/display.lock \
+  --hardware-idle-seconds 90 \
   --log-file /var/log/abu-dhabi-eink/display-current.log \
   ${AD_EINK_DRIVER_ARGS}

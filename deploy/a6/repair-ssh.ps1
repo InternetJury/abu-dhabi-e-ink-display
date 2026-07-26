@@ -32,7 +32,11 @@ if ($agent) {
 Write-Host "Opening the Windows firewall rule for OpenSSH..."
 $rule = Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyContinue
 if ($rule) {
-    Enable-NetFirewallRule -Name "OpenSSH-Server-In-TCP"
+    Set-NetFirewallRule `
+        -Name "OpenSSH-Server-In-TCP" `
+        -Enabled True `
+        -Profile Any `
+        -RemoteAddress @("100.64.0.0/10", "LocalSubnet")
 }
 else {
     New-NetFirewallRule `
@@ -42,7 +46,9 @@ else {
         -Direction Inbound `
         -Protocol TCP `
         -Action Allow `
-        -LocalPort 22 | Out-Null
+        -LocalPort 22 `
+        -Profile Any `
+        -RemoteAddress @("100.64.0.0/10", "LocalSubnet") | Out-Null
 }
 
 Write-Host "OpenSSH Server is ready."

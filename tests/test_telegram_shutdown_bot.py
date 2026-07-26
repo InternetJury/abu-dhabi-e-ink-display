@@ -91,6 +91,27 @@ def test_whoami_is_available_without_authorizing_operational_access():
     assert telegram.messages == [(777, "Your Telegram user ID is 777.\nAdd this numeric ID to TELEGRAM_ALLOWED_USER_IDS on the A6.")]
 
 
+def test_unauthorized_whoami_is_silent_after_allowlist_is_configured():
+    controller, telegram, executor, _state, _store = make_controller(allowed_user_ids={42})
+
+    controller.handle_update(make_update(777, "/whoami"))
+
+    assert executor.status_calls == 0
+    assert executor.shutdown_calls == 0
+    assert telegram.messages == []
+    assert controller.rejections.unauthorized == 1
+
+
+def test_authorized_whoami_remains_available_after_allowlist_is_configured():
+    controller, telegram, executor, _state, _store = make_controller(allowed_user_ids={42})
+
+    controller.handle_update(make_update(42, "/whoami"))
+
+    assert executor.status_calls == 0
+    assert executor.shutdown_calls == 0
+    assert telegram.messages == [(42, "Your Telegram user ID is 42.\nThis account is authorized for e-ink control.")]
+
+
 def test_unauthorized_status_is_ignored_without_operational_response():
     controller, telegram, executor, _state, _store = make_controller(allowed_user_ids={42})
 
@@ -187,6 +208,31 @@ def test_shell_executor_rejects_unsafe_ssh_components():
         assert "Pi host" in str(exc)
     else:
         raise AssertionError("unsafe host should be rejected")
+
+
+def test_shell_executor_uses_dedicated_identity_and_known_hosts(monkeypatch):
+    captured: dict[str, list[str]] = {}
+
+    def fake_run(command, **_kwargs):
+        captured["command"] = command
+        return type("Result", (), {"stdout": "active", "stderr": "", "returncode": 0})()
+
+    monkeypatch.setattr(bot.subprocess, "run", fake_run)
+    config = bot.BotConfig(
+        token="token",
+        allowed_user_ids={42},
+        ssh_identity_file="C:/local/secrets/publisher_ed25519",
+        ssh_known_hosts_file="C:/local/secrets/publisher_known_hosts",
+    )
+
+    assert bot.ShellPiExecutor(config).status() == "active"
+    command = captured["command"]
+    assert command[:3] == ["ssh", "-i", "C:/local/secrets/publisher_ed25519"]
+    assert "IdentitiesOnly=yes" in command
+    assert "StrictHostKeyChecking=accept-new" in command
+    assert "UserKnownHostsFile=C:/local/secrets/publisher_known_hosts" in command
+    assert command[-2] == "display@ad-eink-pi.local"
+    assert command[-1] == bot.PI_STATUS_COMMAND
 
 
 def test_poll_loop_persists_offset_before_handling_update():

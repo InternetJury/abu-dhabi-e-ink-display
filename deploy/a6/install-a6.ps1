@@ -25,7 +25,23 @@ function Install-WingetPackage {
     }
 
     Write-Host "Installing or updating $Name..."
-    winget install --id $Id --exact --silent --accept-source-agreements --accept-package-agreements
+    & winget install --id $Id --exact --silent --accept-source-agreements --accept-package-agreements
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Name installation failed with exit code $LASTEXITCODE."
+    }
+}
+
+function Invoke-CheckedCommand {
+    param(
+        [Parameter(Mandatory = $true)][string]$FilePath,
+        [Parameter(Mandatory = $true)][string[]]$Arguments,
+        [Parameter(Mandatory = $true)][string]$Description
+    )
+
+    & $FilePath @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Description failed with exit code $LASTEXITCODE."
+    }
 }
 
 function Get-CompatiblePython {
@@ -88,15 +104,37 @@ $root = New-Item -ItemType Directory -Force -Path $InstallRoot
 $appDir = Join-Path $root.FullName "app"
 $framesDir = Join-Path $root.FullName "frames"
 $logsDir = Join-Path $root.FullName "logs"
-New-Item -ItemType Directory -Force -Path $framesDir, $logsDir | Out-Null
+$secretsDir = Join-Path $root.FullName "secrets"
+$playwrightDir = Join-Path $root.FullName "playwright"
+New-Item -ItemType Directory -Force -Path $framesDir, $logsDir, $secretsDir, $playwrightDir | Out-Null
+
+$currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+& icacls.exe $secretsDir /inheritance:r /grant:r "SYSTEM:(OI)(CI)F" "$($currentIdentity):(OI)(CI)F" | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to restrict permissions on $secretsDir."
+}
+
+$publisherKey = Join-Path $secretsDir "publisher_ed25519"
+$knownHostsFile = Join-Path $secretsDir "publisher_known_hosts"
+$sshKeygen = Join-Path $env:WINDIR "System32\OpenSSH\ssh-keygen.exe"
+if (-not (Test-Path -LiteralPath $sshKeygen)) {
+    throw "Windows OpenSSH Client is required at $sshKeygen. Install the OpenSSH Client capability, then rerun this script."
+}
+if (-not (Test-Path -LiteralPath $publisherKey)) {
+    Write-Host "Generating dedicated A6-to-Pi publisher key..."
+    Invoke-CheckedCommand `
+        -FilePath $sshKeygen `
+        -Arguments @("-q", "-t", "ed25519", "-N", "", "-C", "abu-dhabi-eink-publisher", "-f", $publisherKey) `
+        -Description "Publisher SSH key generation"
+}
 
 if (-not (Test-Path $appDir)) {
     Write-Host "Cloning project into $appDir..."
-    git clone $RepoUrl $appDir
+    Invoke-CheckedCommand -FilePath "git" -Arguments @("clone", $RepoUrl, $appDir) -Description "Project clone"
 }
 else {
     Write-Host "Updating existing checkout in $appDir..."
-    git -C $appDir pull --ff-only
+    Invoke-CheckedCommand -FilePath "git" -Arguments @("-C", $appDir, "pull", "--ff-only") -Description "Project update"
 }
 
 $venvDir = Join-Path $appDir ".venv"
@@ -115,13 +153,17 @@ if (-not (Test-Path $pythonExe)) {
     throw "Virtual environment creation failed; expected Python at $pythonExe."
 }
 
-& $pythonExe -m pip install --upgrade pip
-& $pythonExe -m pip install -e $appDir
-& $pythonExe -m playwright install chromium
+Invoke-CheckedCommand -FilePath $pythonExe -Arguments @("-m", "pip", "install", "--upgrade", "pip") -Description "pip upgrade"
+Invoke-CheckedCommand -FilePath $pythonExe -Arguments @("-m", "pip", "install", "-e", $appDir) -Description "Project dependency install"
+$env:PLAYWRIGHT_BROWSERS_PATH = $playwrightDir
+Invoke-CheckedCommand -FilePath $pythonExe -Arguments @("-m", "playwright", "install", "chromium") -Description "Playwright Chromium install"
 
 if ($DisableLockSleep) {
     $disableScript = Join-Path $appDir "deploy\a6\disable-lock-sleep.ps1"
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $disableScript
+    if ($LASTEXITCODE -ne 0) {
+        throw "Lock/sleep policy update failed with exit code $LASTEXITCODE."
+    }
 }
 
 if ($RegisterTask) {
@@ -133,20 +175,52 @@ if ($RegisterTask) {
         "-File", "`"$runner`"",
         "-InstallRoot", "`"$InstallRoot`"",
         "-PiHost", "`"$PiHost`"",
-        "-PiUser", "`"$PiUser`""
+        "-PiUser", "`"$PiUser`"",
+        "-IdentityFile", "`"$publisherKey`"",
+        "-KnownHostsFile", "`"$knownHostsFile`""
     ) -join " "
 
     $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $arguments
-    $trigger = New-ScheduledTaskTrigger -AtLogOn
-    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
+    $trigger = New-ScheduledTaskTrigger -AtStartup
+    $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+    $settings = New-ScheduledTaskSettingsSet `
+        -AllowStartIfOnBatteries `
+        -DontStopIfGoingOnBatteries `
+        -RestartCount 3 `
+        -RestartInterval (New-TimeSpan -Minutes 1) `
+        -StartWhenAvailable `
+        -ExecutionTimeLimit (New-TimeSpan -Seconds 0) `
+        -MultipleInstances IgnoreNew
 
     Write-Host "Registering scheduled task: $taskName"
-    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Force | Out-Null
+    Register-ScheduledTask `
+        -TaskName $taskName `
+        -Action $action `
+        -Trigger $trigger `
+        -Settings $settings `
+        -Principal $principal `
+        -Force | Out-Null
+
+    $watchdog = Join-Path $appDir "deploy\a6\watch-render-publisher.ps1"
+    $watchdogTaskName = "Abu Dhabi E-Ink Publisher Watchdog"
+    $watchdogCommand = (
+        'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "{0}" -InstallRoot "{1}"' -f
+        $watchdog,
+        $InstallRoot
+    )
+
+    Write-Host "Registering scheduled task: $watchdogTaskName"
+    & schtasks /Create /TN $watchdogTaskName /SC MINUTE /MO 1 /TR $watchdogCommand /RU SYSTEM /RL HIGHEST /F | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Publisher watchdog task registration failed with exit code $LASTEXITCODE."
+    }
 }
 
 Write-Host "A6 setup complete."
 Write-Host "App:    $appDir"
 Write-Host "Frames: $framesDir"
 Write-Host "Logs:   $logsDir"
+Write-Host "Publisher public key (authorize this once on the Pi):"
+Get-Content -LiteralPath "$publisherKey.pub"
 Write-Host "Run loop manually with:"
 Write-Host "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$appDir\deploy\a6\run-render-publisher.ps1`" -InstallRoot `"$InstallRoot`" -PiHost `"$PiHost`" -PiUser `"$PiUser`""

@@ -48,6 +48,8 @@ class BotConfig:
     pi_host: str = "ad-eink-pi.local"
     pi_user: str = "display"
     ssh_path: str = "ssh"
+    ssh_identity_file: str = ""
+    ssh_known_hosts_file: str = ""
     confirm_ttl_seconds: int = 60
     shutdown_cooldown_seconds: int = 300
     poll_timeout_seconds: int = 30
@@ -166,13 +168,20 @@ class ShellPiExecutor:
         target = f"{self.config.pi_user}@{self.config.pi_host}"
         command = [
             self.config.ssh_path,
+        ]
+        if self.config.ssh_identity_file:
+            command.extend(["-i", self.config.ssh_identity_file])
+        command.extend([
             "-o",
             "BatchMode=yes",
             "-o",
-            "ConnectTimeout=10",
-            target,
-            remote_command,
-        ]
+            "IdentitiesOnly=yes",
+            "-o",
+            "StrictHostKeyChecking=accept-new",
+        ])
+        if self.config.ssh_known_hosts_file:
+            command.extend(["-o", f"UserKnownHostsFile={self.config.ssh_known_hosts_file}"])
+        command.extend(["-o", "ConnectTimeout=10", target, remote_command])
 
         logging.info("Running fixed Pi command: %s", remote_command.split()[0])
         result = subprocess.run(command, capture_output=True, text=True, timeout=30, check=False)
@@ -230,7 +239,9 @@ class BotController:
         if not isinstance(user_id, int) or not isinstance(chat_id, int):
             return
 
-        if command == "/whoami":
+        # Bootstrap discovery is available only while no allowlist exists. Once
+        # configured, unknown users receive no response from any command.
+        if command == "/whoami" and not self.config.allowed_user_ids:
             self.telegram.send_message(
                 chat_id,
                 f"Your Telegram user ID is {user_id}.\nAdd this numeric ID to TELEGRAM_ALLOWED_USER_IDS on the A6.",
@@ -245,7 +256,12 @@ class BotController:
             self._record_rejection(unauthorized=True)
             return
 
-        if command == "/status":
+        if command == "/whoami":
+            self.telegram.send_message(
+                chat_id,
+                f"Your Telegram user ID is {user_id}.\nThis account is authorized for e-ink control.",
+            )
+        elif command == "/status":
             self._send_status(chat_id)
         elif command == "/shutdown_pi":
             self._request_shutdown(chat_id, user_id)
@@ -385,6 +401,8 @@ def build_config(env: dict[str, str], dry_run_override: bool = False, poll_timeo
         pi_host=env.get("PI_HOST", "ad-eink-pi.local").strip(),
         pi_user=env.get("PI_USER", "display").strip(),
         ssh_path=env.get("SSH_PATH", "ssh").strip(),
+        ssh_identity_file=env.get("SSH_IDENTITY_FILE", "").strip(),
+        ssh_known_hosts_file=env.get("SSH_KNOWN_HOSTS_FILE", "").strip(),
         confirm_ttl_seconds=int(env.get("TELEGRAM_CONFIRM_TTL_SECONDS", "60")),
         shutdown_cooldown_seconds=int(env.get("TELEGRAM_SHUTDOWN_COOLDOWN_SECONDS", "300")),
         poll_timeout_seconds=poll_timeout_override or int(env.get("TELEGRAM_POLL_TIMEOUT_SECONDS", "30")),

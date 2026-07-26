@@ -2,7 +2,7 @@
 
 Premium monochrome Abu Dhabi mobility ribbon for `1360x480` e-ink displays.
 
-This repository contains the completed Phase 1 PNG-first implementation for a three-mode mobility display designed around Abu Dhabi bus departures, weather, AQI, curated news headlines, and compact market context. The templates are locked and approved.
+This repository contains the completed Phase 1 PNG-first implementation for a three-mode mobility display designed around Abu Dhabi bus departures, weather, AQI, curated news headlines, and compact market context. The templates are locked and approved. It also includes the Phase 2 device runtime for a Windows renderer and Raspberry Pi-driven Waveshare panel.
 
 ## Phase 1 Status
 
@@ -14,12 +14,13 @@ Phase 1 is complete for the product surface:
 - weather, AQI, curated headlines, and compact market indices
 - scheduler, fixtures, preview transforms, and regression tests
 
-What is intentionally out of scope for Phase 1:
+Phase 1 remains intentionally independent of hardware. The repository now additionally provides:
 
-- SPI or panel driver integration
-- e-paper hardware refresh control
-- Raspberry Pi daemon/service packaging
-- on-device deployment automation
+- a minute-aligned A6 renderer/publisher with atomic transfer and watchdog recovery
+- a Raspberry Pi `systemd` display client with stale-frame rejection and bounded storage
+- a dual-controller Waveshare 10.85-inch B/W adapter using full-frame refreshes
+- startup full-refresh and clean panel-sleep behavior
+- a private, allowlisted Telegram status/shutdown bot
 
 ## Final Locked Modes
 
@@ -145,17 +146,19 @@ The curated public repo includes only the approved export set for:
 
 No backend redesign is required to consider Phase 1 complete.
 
-The current provider/scheduler stack is sufficient for public release, with these caveats:
+The current provider/scheduler stack and device runtime are sufficient for public release, with these caveats:
 
 - Darbi remains a live web dependency and therefore operationally brittle compared with a formal public API
-- current settings are code-configured rather than env/config-file driven
-- persistent device runtime and hardware integration are intentionally deferred
+- most application settings remain code-configured rather than fully externalized
+- dual-controller partial refresh remains deliberately disabled; production uses the safer full-frame path
 
-Phase 2 is optional and mainly about hardware deployment and production hardening, not template work. See [docs/phase-status.md](docs/phase-status.md).
+The Phase 2 implementation and remaining deployment acceptance work are tracked in [docs/phase-status.md](docs/phase-status.md).
 
 ## Device Deployment
 
 The recommended hardware topology is a Geekom A6 Mini as the renderer and a Raspberry Pi Zero 2 W as the SPI e-ink display client. The deployment scripts and step-by-step setup guide are in [docs/device-deployment.md](docs/device-deployment.md).
+
+The Waveshare recovery and cold-start safety model are documented in [docs/waveshare-10in85-recovery.md](docs/waveshare-10in85-recovery.md). Private Telegram control setup is documented in [docs/telegram-shutdown-bot.md](docs/telegram-shutdown-bot.md).
 
 ## Tests
 
@@ -166,6 +169,9 @@ The repository includes coverage for:
 - locked render regressions
 - review preview transforms
 - exact `1360x480` output sizing
+- stale/off-minute frame rejection before panel initialization
+- Waveshare master/slave buffer splitting and controller geometry
+- atomic A6-to-Pi publishing, startup tasks, watchdog policy, and Telegram authorization
 
 Run all tests:
 

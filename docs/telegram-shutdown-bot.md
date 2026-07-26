@@ -22,6 +22,7 @@ Official references:
 - Unauthorized/non-private command attempts are counted in aggregate only, not logged message-by-message.
 - The A6 runs one fixed SSH command for shutdown; Telegram message text is never interpolated into a shell command.
 - The Pi sudoers rule permits only `/opt/abu-dhabi-eink/shutdown-display.sh`, not unrestricted root access.
+- The A6 bot task runs as `SYSTEM` at Windows startup and uses the same dedicated local-only publisher SSH key as the frame publisher. It does not depend on an interactive user login.
 
 ## Install On The A6
 
@@ -111,7 +112,7 @@ ssh display@ad-eink-pi.local "sudo -n /opt/abu-dhabi-eink/shutdown-display.sh --
 
 ## Commands
 
-- `/whoami`: returns the sender's numeric Telegram user ID.
+- `/whoami`: returns the sender's numeric Telegram user ID while the allowlist is empty. After setup, it responds only to approved accounts.
 - `/status`: checks Pi hostname, display service state, and current frame file status.
 - `/shutdown_pi`: starts a shutdown confirmation challenge.
 - `/confirm <code>`: shuts down the Pi if the code is valid and not expired.

@@ -11,7 +11,7 @@ The locked templates do not change. The A6 renders a finished `1360x480` PNG eve
 - Transport: SSH/SCP over Tailscale
 - Frame path on A6: `C:\AbuDhabiEInk\frames\current.png`
 - Frame path on Pi: `/var/lib/abu-dhabi-eink/current.png`
-- Refresh cadence: render on minute boundaries, full e-ink refresh every `5` minutes
+- Refresh cadence: render on minute boundaries; use full-frame refresh for each accepted minute while partial refresh remains quarantined
 
 ## 1. Prepare the microSD
 
@@ -119,12 +119,14 @@ This writes `/etc/default/ad-eink-display` with:
 ```text
 WAVESHARE_10IN85_VENDOR_LIB="/opt/abu-dhabi-eink/vendor/waveshare-10in85/RaspberryPi/python/lib"
 WAVESHARE_10IN85_SPI_HZ="2000000"
-AD_EINK_DRIVER_ARGS="--driver-lib /opt/abu-dhabi-eink --driver-module waveshare_10in85_bw"
+AD_EINK_DRIVER_ARGS="--driver-lib /opt/abu-dhabi-eink --driver-module waveshare_10in85_bw --startup-delay-seconds 5 --startup-full-refresh-count 1 --disable-partial --require-current-minute --latest-display-start-second 45"
 ```
 
 Then reloads and restarts `ad-eink-display.service`.
 
-The service uses a local `waveshare_10in85_bw` adapter instead of calling the vendored module directly. The 10.85inch display uses two controller halves, so the adapter splits each packed `1360x480` frame row-by-row into master/slave buffers, loads both halves, then performs one shared refresh. The default SPI rate is reduced to `2MHz`; if the right half shows data-loss artifacts, test `1MHz` before changing UI code.
+The service uses a local `waveshare_10in85_bw` adapter instead of calling the vendored module directly. The 10.85inch display uses two controller halves, so the adapter splits each packed `1360x480` frame row-by-row into master/slave buffers, loads both halves, then performs one shared refresh. The default SPI rate is `2MHz`, matching the last-known-working deployment. Production uses full-frame refresh only while dual-controller partial refresh remains disabled.
+
+The client validates file age, render minute, safe refresh-start cutoff, and PNG dimensions before importing or initializing the hardware driver. A stale or previous-minute frame therefore cannot power the panel after reboot. The first valid frame after service start is forced through the full-refresh path, the panel is put to sleep if publishing stops, and an OS lock prevents more than one process from writing GPIO/SPI.
 
 The Waveshare Python GPIO stack is run by the display service with root privileges. The vendor driver needs GPIO edge-detection access for the panel busy pin; running it as the unprivileged `display` user can fail with `RuntimeError: Failed to add edge detection` even when the user belongs to the `gpio` group.
 
@@ -145,6 +147,8 @@ Important Waveshare wiring notes:
 - Directly mount the HAT onto the Pi 40-pin header, or use the Waveshare 10-pin mapping from the official manual.
 - SPI must expose both `/dev/spidev0.0` and `/dev/spidev0.1` because this panel uses separate `CS_M` and `CS_S`.
 - Do not enable hardware output until the HAT and panel ribbon are seated; otherwise the service may loop on driver/hardware errors.
+- Keep `Display Config` fixed at `B / 0.47R` and `Interface Config` fixed at `0 / 4-line SPI`. Switches must only be changed while the Pi and HAT are unpowered.
+- Never run a vendor diagnostic while `ad-eink-display.service` is active. The runtime lock protects the production client, but third-party demos may not honor it.
 
 ## 6. Prepare the A6 Mini
 
@@ -170,11 +174,25 @@ powershell.exe -ExecutionPolicy Bypass -File C:\Path\To\app\deploy\a6\install-a6
 
 The script installs or verifies Git, Python 3.11, Playwright Chromium, the project checkout, runtime folders, and the scheduled render loop.
 
+The installer also creates a dedicated A6-to-Pi Ed25519 key under
+`C:\AbuDhabiEInk\secrets`. Authorize the public key printed by the installer
+once in the Pi user's `~/.ssh/authorized_keys`. The private key and known-hosts
+file remain local to the A6 and must never be committed or copied into the
+public repository.
+
+Both scheduled tasks run as `SYSTEM`: the publisher starts at Windows startup,
+and the watchdog checks it every minute. No interactive Windows sign-in is
+required after an A6 reboot. A publisher frame or heartbeat older than `90`
+seconds is treated as stale and the task is restarted, limiting a hung process
+to approximately one missed refresh interval before recovery begins.
+
 Default A6 folders:
 
 - app: `C:\AbuDhabiEInk\app`
 - frames: `C:\AbuDhabiEInk\frames`
 - logs: `C:\AbuDhabiEInk\logs`
+- secrets: `C:\AbuDhabiEInk\secrets` (local-only SSH material)
+- Playwright browser cache: `C:\AbuDhabiEInk\playwright`
 
 ## 7. Manual A6 render/publish test
 
@@ -196,7 +214,7 @@ ssh display@ad-eink-pi "ls -lh /var/lib/abu-dhabi-eink/current.png"
 - A6 logs show a new render every minute.
 - Pi logs show a new frame checksum whenever the PNG changes.
 - The PNG on the Pi is exactly `1360x480`.
-- Rebooting the A6 restarts the scheduled task after login.
+- Rebooting the A6 starts the publisher and Telegram control tasks as `SYSTEM`; no user login is required.
 - Rebooting the Pi restarts `ad-eink-display.service`.
 
 ## 9. Storage retention
@@ -215,10 +233,11 @@ This means the long-running deployment does not accumulate one PNG per minute.
 
 The runtime is tuned to avoid showing an old minute on the e-paper panel:
 
-- A6 waits for aligned render slots, so normal renders start at `HH:MM:00` rather than drifting by “sleep after render” timing.
-- A6 skips publishing a frame if rendering takes more than `45` seconds.
+- A6 waits for aligned render slots, so normal renders start at `HH:MM:00` rather than drifting through sleep-after-render timing.
+- A6 skips publishing a frame if rendering takes more than `30` seconds and aborts the complete render/publish cycle after `42` seconds.
 - Pi polls for changed frames every `1` second.
 - Pi skips display updates when the received frame file is older than `50` seconds.
+- Pi also rejects a frame whose render mtime is not in the current minute or whose refresh would start after second `45`.
 - The publish operation is atomic: A6 copies to `current.png.tmp`, then renames it to `current.png`.
 
 In normal operation this means a frame generated for `10:00` is published and picked up during the `10:00` minute, not displayed as a fresh update at `10:01` or later.

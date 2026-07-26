@@ -15,6 +15,7 @@ build/
 *.egg-info/
 output/cache/
 output/demo_runs/
+output/device-recovery/
 output/stitch_review/
 output/tmp-*.png
 output/frames/*

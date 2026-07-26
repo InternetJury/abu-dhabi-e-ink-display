@@ -1,0 +1,3 @@
+WAVESHARE_10IN85_VENDOR_LIB="/opt/abu-dhabi-eink/vendor/waveshare-10in85/RaspberryPi/python/lib"
+WAVESHARE_10IN85_SPI_HZ="2000000"
+AD_EINK_DRIVER_ARGS="--driver-lib /opt/abu-dhabi-eink --driver-module waveshare_10in85_bw --startup-delay-seconds 5 --startup-full-refresh-count 1 --disable-partial --require-current-minute --latest-display-start-second 45"
