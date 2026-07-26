@@ -40,6 +40,7 @@ def test_a6_publisher_can_install_a_valid_one_time_maintenance_key():
     assert 'Join-Path $framesDir "maintenance_authorized_key.pub"' in script
     assert "^ssh-ed25519 [A-Za-z0-9+/]+={0,3}( [A-Za-z0-9_.@-]+)?$" in script
     assert '"$($remote):.ssh/maintenance_authorized_key.pub.tmp"' in script
+    assert "printf '\\n' >> ~/.ssh/authorized_keys" in script
     assert "cat ~/.ssh/maintenance_authorized_key.pub.tmp >> ~/.ssh/authorized_keys" in script
     assert "Remove-Item -LiteralPath $maintenanceKeyHandoff" in script
     assert "Publisher SSH key not found" in script
