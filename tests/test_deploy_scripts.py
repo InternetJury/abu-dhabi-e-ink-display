@@ -157,7 +157,7 @@ def test_waveshare_install_uses_local_dual_controller_adapter():
     assert "SPI_line 0" not in script
     assert "--clear-on-start" in environment
     assert "--startup-full-refresh-count 1" in environment
-    assert "--disable-partial" not in environment
+    assert "--disable-partial" in environment
     assert "--full-refresh-seconds 300" in environment
     assert "--monochrome-threshold 200" in environment
     assert "--require-current-minute" in environment

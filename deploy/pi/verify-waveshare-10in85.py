@@ -10,13 +10,14 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import time
 
 try:
     import fcntl
 except ImportError:  # Windows can still validate previews; hardware apply is Linux-only.
     fcntl = None
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 
 WIDTH = 1360
@@ -63,6 +64,26 @@ class TransferTrace:
         }
 
 
+def patch_vendor_spi_speed(vendor_module, spi_hz: int) -> None:
+    epdconfig = vendor_module.epdconfig
+    if getattr(epdconfig, "_contrast_diagnostic_spi_hz", None) == spi_hz:
+        return
+
+    original_module_init = epdconfig.module_init
+
+    def module_init(*args, **kwargs):
+        result = original_module_init(*args, **kwargs)
+        implementation = getattr(epdconfig, "implementation", None)
+        for spi_name in ("SPI_M", "SPI_S"):
+            spi = getattr(implementation, spi_name, None)
+            if spi is not None:
+                spi.max_speed_hz = spi_hz
+        return result
+
+    epdconfig.module_init = module_init
+    epdconfig._contrast_diagnostic_spi_hz = spi_hz
+
+
 def build_pattern(mode: str) -> Image.Image:
     if mode == "full-white":
         return Image.new("1", (WIDTH, HEIGHT), 255)
@@ -76,7 +97,122 @@ def build_pattern(mode: str) -> Image.Image:
     if mode == "right-black":
         image.paste(0, (WIDTH // 2, 0, WIDTH, HEIGHT))
         return image
+    if mode == "mirrored-contrast":
+        half = _build_contrast_half()
+        image.paste(half, (0, 0))
+        image.paste(half, (WIDTH // 2, 0))
+        return image
     raise ValueError(f"Unsupported diagnostic mode: {mode}")
+
+
+def _load_diagnostic_font(size: int):
+    candidates = (
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "C:/Windows/Fonts/arial.ttf",
+    )
+    for candidate in candidates:
+        if Path(candidate).exists():
+            return ImageFont.truetype(candidate, size)
+    return ImageFont.load_default()
+
+
+def _build_contrast_half() -> Image.Image:
+    half_width = WIDTH // 2
+    image = Image.new("1", (half_width, HEIGHT), 255)
+    draw = ImageDraw.Draw(image)
+
+    # The same full-width rules terminate at both sides of the controller seam.
+    draw.line((0, 44, half_width - 1, 44), fill=0, width=1)
+    draw.line((0, 64, half_width - 1, 64), fill=0, width=2)
+    draw.line((0, 86, half_width - 1, 86), fill=0, width=3)
+
+    small = _load_diagnostic_font(12)
+    medium = _load_diagnostic_font(16)
+    draw.text((24, 104), "LAST UPDATED 26 JUL 21:59", font=small, fill=0)
+    draw.text((24, 134), "26 JUL 21:59", font=small, fill=0)
+    draw.text((24, 168), "21:59", font=medium, fill=0)
+    draw.text((170, 168), "SCHEDULED 21:59", font=medium, fill=0)
+
+    draw.rectangle((24, 218, 154, 278), fill=0)
+    draw.rectangle((180, 218, 310, 278), outline=0, width=1)
+    draw.rectangle((336, 218, 466, 278), outline=0, width=2)
+    draw.rectangle((492, 218, 622, 278), outline=0, width=3)
+
+    for x in range(24, 624, 8):
+        draw.line((x, 316, x, 396), fill=0, width=1 if (x // 8) % 2 else 2)
+    for y in range(420, 456, 4):
+        draw.line((24, y, 622, y), fill=0, width=1)
+    return image
+
+
+def split_payload_halves(payload: list[int] | bytes | bytearray) -> tuple[list[int], list[int]]:
+    row_bytes = WIDTH // 8
+    half_row_bytes = row_bytes // 2
+    expected = row_bytes * HEIGHT
+    if len(payload) != expected:
+        raise ValueError(f"Expected {expected} packed bytes, got {len(payload)}")
+
+    master: list[int] = []
+    slave: list[int] = []
+    for row in range(HEIGHT):
+        start = row * row_bytes
+        middle = start + half_row_bytes
+        end = start + row_bytes
+        master.extend(payload[start:middle])
+        slave.extend(payload[middle:end])
+    return master, slave
+
+
+def execute_strategy(epd, payload, strategy: str, *, repeat_count: int = 5) -> None:
+    if strategy in {"official-full", "adapter-compound"}:
+        epd.init()
+        epd.display(payload)
+        return
+    if strategy == "adapter-full-only":
+        epd.init()
+        master, slave = split_payload_halves(payload)
+        epd._write_full(master, slave)
+        return
+    if strategy == "adapter-slave-reinforced":
+        epd.init()
+        master, slave = split_payload_halves(payload)
+        epd._write_full(master, slave)
+        epd.init_Part()
+        epd._write_slave_reinforcement(master, slave)
+        return
+    if strategy == "adapter-partial":
+        epd.init_Part()
+        epd.display_Partial(payload, 0, 0, WIDTH, HEIGHT)
+        return
+    if strategy == "clear-init-partial":
+        epd.init()
+        epd.Clear()
+        epd.init_Part()
+        epd.display_Partial(payload, 0, 0, WIDTH, HEIGHT)
+        return
+    if strategy == "adapter-partial-cycle":
+        if repeat_count < 1 or repeat_count % 2 == 0:
+            raise ValueError("Partial cycle repeat count must be a positive odd number")
+        white_payload = [0xFF] * len(payload)
+        epd.init()
+        epd.Clear()
+        epd.init_Part()
+        for index in range(repeat_count):
+            frame = payload if index % 2 == 0 else white_payload
+            epd.display_Partial(frame, 0, 0, WIDTH, HEIGHT)
+        return
+    if strategy == "adapter-reinit-partial-cycle":
+        if repeat_count < 1 or repeat_count % 2 == 0:
+            raise ValueError("Partial cycle repeat count must be a positive odd number")
+        white_payload = [0xFF] * len(payload)
+        epd.init()
+        epd.Clear()
+        for index in range(repeat_count):
+            epd.init_Part()
+            frame = payload if index % 2 == 0 else white_payload
+            epd.display_Partial(frame, 0, 0, WIDTH, HEIGHT)
+        return
+    raise ValueError(f"Unsupported refresh strategy: {strategy}")
 
 
 def load_live_frame(path: Path) -> Image.Image:
@@ -125,21 +261,29 @@ def apply_pattern(args, image: Image.Image) -> None:
     os.environ["WAVESHARE_10IN85_VENDOR_LIB"] = args.vendor_lib
     os.environ["WAVESHARE_10IN85_SPI_HZ"] = str(args.spi_hz)
     sys.path.insert(0, args.driver_lib)
+    sys.path.insert(0, args.vendor_lib)
 
     with ExclusiveDisplayLock(Path(args.lock_file)):
-        module = importlib.import_module(args.driver_module)
+        module_name = "waveshare_epd.epd10in85" if args.strategy == "official-full" else args.driver_module
+        module = importlib.import_module(module_name)
+        if args.strategy == "official-full":
+            patch_vendor_spi_speed(module, args.spi_hz)
         epd = module.EPD()
         trace = TransferTrace()
         trace.install(epd)
         try:
-            epd.init()
-            epd.display(epd.getbuffer(image))
+            started_at = time.monotonic()
+            payload = epd.getbuffer(image)
+            execute_strategy(epd, payload, args.strategy, repeat_count=args.repeat_count)
+            elapsed = time.monotonic() - started_at
             master = trace.summary("M")
             slave = trace.summary("S")
             logging.info(
-                "Applied one full-frame %s diagnostic; "
+                "Applied %s with %s in %.2fs; "
                 "M writes=%d total=%d max=%d; S writes=%d total=%d max=%d.",
                 args.mode,
+                args.strategy,
+                elapsed,
                 master["count"],
                 master["total_bytes"],
                 master["max_bytes"],
@@ -159,7 +303,7 @@ def parse_args():
     )
     parser.add_argument(
         "mode",
-        choices=("full-white", "full-black", "left-black", "right-black", "live"),
+        choices=("full-white", "full-black", "left-black", "right-black", "mirrored-contrast", "live"),
     )
     parser.add_argument("--image", default="/var/lib/abu-dhabi-eink/current.png")
     parser.add_argument("--preview", help="Save the exact 1360x480 diagnostic PNG without touching hardware.")
@@ -170,6 +314,26 @@ def parse_args():
     )
     parser.add_argument("--driver-lib", default="/opt/abu-dhabi-eink")
     parser.add_argument("--driver-module", default="waveshare_10in85_bw")
+    parser.add_argument(
+        "--strategy",
+        choices=(
+            "official-full",
+            "adapter-full-only",
+            "adapter-slave-reinforced",
+            "adapter-compound",
+            "adapter-partial",
+            "clear-init-partial",
+            "adapter-partial-cycle",
+            "adapter-reinit-partial-cycle",
+        ),
+        default="adapter-compound",
+    )
+    parser.add_argument(
+        "--repeat-count",
+        type=int,
+        default=5,
+        help="Positive odd update count for adapter-partial-cycle; the final frame is the requested pattern.",
+    )
     parser.add_argument(
         "--vendor-lib",
         default="/opt/abu-dhabi-eink/vendor/waveshare-10in85/RaspberryPi/python/lib",

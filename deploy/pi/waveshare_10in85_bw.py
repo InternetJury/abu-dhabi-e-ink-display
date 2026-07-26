@@ -115,7 +115,7 @@ class EPD:
         # the same final contrast after startup and periodic full refreshes.
         time.sleep(FULL_TO_PARTIAL_SETTLE_SECONDS)
         self.init_Part()
-        self._write_partial(master, slave)
+        self._write_slave_reinforcement(master, slave)
 
     def Clear(self) -> None:
         white = [0xFF] * HALF_BUFFER_BYTES
@@ -170,6 +170,24 @@ class EPD:
         self._load_new_data(master, slave)
         self._epd.TurnOnDisplay()
         self._update_old_data(master, slave)
+
+    def _write_slave_reinforcement(self, master: Sequence[int], slave: Sequence[int]) -> None:
+        """Re-drive slave black pixels while keeping the master image unchanged."""
+        self._set_full_half_windows()
+
+        # A no-op master transition keeps the shared refresh synchronized. The
+        # slave receives an explicit white-to-target transition so its lighter
+        # fine strokes get the same black-state drive as the master controller.
+        self._epd.send_command_M(0x10)
+        self._stream_rows(self._epd.send_data2_M, master)
+        self._epd.send_command_S(0x10)
+        self._stream_rows(self._epd.send_data2_S, [0xFF] * len(slave))
+
+        self._load_new_data(master, slave)
+        self._epd.TurnOnDisplay()
+        self._update_old_data(master, slave)
+        self._old_master_ready = True
+        self._old_slave_ready = True
 
     def _set_full_half_windows(self) -> None:
         half_width = self.width // 2
