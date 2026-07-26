@@ -242,6 +242,8 @@ function Export-OneTimeMaintenanceStatus {
 
     $remote = "$($PiUser)@$($PiHost)"
     $remoteStatus = "/var/lib/abu-dhabi-eink/maintenance-status.txt"
+    $remoteExporter = "/var/lib/abu-dhabi-eink/export-maintenance-status.sh"
+    $localExporter = Join-Path $appDir "deploy\pi\export-maintenance-status.sh"
     $sshOptions = @(
         "-i", $IdentityFile,
         "-o", "BatchMode=yes",
@@ -259,35 +261,19 @@ function Export-OneTimeMaintenanceStatus {
         "-o", "UserKnownHostsFile=$KnownHostsFile",
         "-o", "ConnectTimeout=8"
     )
-    $remoteCommand = @"
-set -u
-{
-  echo '=== identity ==='
-  id
-  hostname
-  date --iso-8601=seconds
-  echo '=== ssh authorized-key configuration ==='
-  grep -RhsE '^[[:space:]]*AuthorizedKeysFile|^[[:space:]]*PubkeyAuthentication|^[[:space:]]*Match' /etc/ssh/sshd_config /etc/ssh/sshd_config.d 2>/dev/null || true
-  echo '=== home ssh permissions ==='
-  stat -c '%U:%G %a %n' ~ ~/.ssh ~/.ssh/authorized_keys 2>/dev/null || true
-  ssh-keygen -lf ~/.ssh/authorized_keys 2>/dev/null || true
-  echo '=== display defaults ==='
-  cat /etc/default/ad-eink-display 2>/dev/null || true
-  echo '=== display unit ==='
-  systemctl cat ad-eink-display.service 2>/dev/null || true
-  echo '=== display process ==='
-  ps -eo pid,lstart,args | grep -E '[d]isplay-current|[w]aveshare' || true
-  echo '=== display service state ==='
-  systemctl show ad-eink-display.service -p ActiveState -p SubState -p UnitFileState -p ExecMainStartTimestamp -p ExecMainPID 2>/dev/null || true
-  echo '=== recent display journal ==='
-  journalctl -u ad-eink-display.service -n 100 --no-pager 2>/dev/null || true
-} > '$remoteStatus.tmp'
-mv '$remoteStatus.tmp' '$remoteStatus'
-"@
+    if (-not (Test-Path -LiteralPath $localExporter)) {
+        throw "Pi maintenance exporter not found at $localExporter."
+    }
+
+    Invoke-ExternalCommand `
+        -FilePath "scp" `
+        -Arguments ($scpOptions + @($localExporter, "$($remote):$remoteExporter")) `
+        -TimeoutSeconds $PublishCommandTimeoutSeconds `
+        -Description "Pi maintenance exporter copy"
 
     Invoke-ExternalCommand `
         -FilePath "ssh" `
-        -Arguments ($sshOptions + @($remote, $remoteCommand)) `
+        -Arguments ($sshOptions + @($remote, "sh '$remoteExporter' '$remoteStatus'")) `
         -TimeoutSeconds $PublishCommandTimeoutSeconds `
         -Description "Pi maintenance status collection"
 
@@ -376,7 +362,20 @@ if (-not $SkipPublish -and -not (Test-Path -LiteralPath $IdentityFile)) {
 do {
     try {
         Install-OneTimeMaintenanceKey
+    }
+    catch {
+        Write-Log "ERROR: Pi maintenance key handoff failed: $($_.Exception.Message)"
+    }
+
+    try {
         Export-OneTimeMaintenanceStatus
+    }
+    catch {
+        Remove-Item -LiteralPath $maintenanceStatusRequest -Force -ErrorAction SilentlyContinue
+        Write-Log "ERROR: Pi maintenance status request failed: $($_.Exception.Message)"
+    }
+
+    try {
         Invoke-StorageCleanup
         Wait-UntilNextRenderSlot
 

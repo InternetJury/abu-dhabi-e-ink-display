@@ -50,11 +50,14 @@ def test_a6_publisher_has_fixed_read_only_pi_maintenance_status_flow():
 
     assert 'Join-Path $framesDir "maintenance-status.request"' in script
     assert "function Export-OneTimeMaintenanceStatus" in script
-    assert "systemctl show ad-eink-display.service" in script
-    assert "journalctl -u ad-eink-display.service" in script
-    assert "ssh-keygen -lf ~/.ssh/authorized_keys" in script
+    assert "export-maintenance-status.sh" in script
     assert "Export-OneTimeMaintenanceStatus" in script
-    assert script.index("    try {") < script.rindex("        Export-OneTimeMaintenanceStatus")
+    assert "Pi maintenance status request failed" in script
+
+    exporter = (REPO_ROOT / "deploy" / "pi" / "export-maintenance-status.sh").read_text()
+    assert "systemctl show ad-eink-display.service" in exporter
+    assert "journalctl -u ad-eink-display.service" in exporter
+    assert 'ssh-keygen -lf "$HOME/.ssh/authorized_keys"' in exporter
 
 
 def test_a6_publisher_preserves_render_time_and_enforces_end_to_end_deadline():
