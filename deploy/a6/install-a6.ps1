@@ -34,7 +34,7 @@ function Install-WingetPackage {
 function Invoke-CheckedCommand {
     param(
         [Parameter(Mandatory = $true)][string]$FilePath,
-        [Parameter(Mandatory = $true)][AllowEmptyString()][string[]]$Arguments,
+        [Parameter(Mandatory = $true)][string[]]$Arguments,
         [Parameter(Mandatory = $true)][string]$Description
     )
 
@@ -124,7 +124,7 @@ if (-not (Test-Path -LiteralPath $publisherKey)) {
     Write-Host "Generating dedicated A6-to-Pi publisher key..."
     Invoke-CheckedCommand `
         -FilePath $sshKeygen `
-        -Arguments @("-q", "-t", "ed25519", "-N", "", "-C", "abu-dhabi-eink-publisher", "-f", $publisherKey) `
+        -Arguments @("-q", "-t", "ed25519", "-N", '""', "-C", "abu-dhabi-eink-publisher", "-f", $publisherKey) `
         -Description "Publisher SSH key generation"
 }
 

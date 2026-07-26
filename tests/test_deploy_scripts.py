@@ -47,7 +47,7 @@ def test_a6_publisher_preserves_render_time_and_enforces_end_to_end_deadline():
 def test_a6_installer_registers_publisher_watchdog():
     script = (REPO_ROOT / "deploy" / "a6" / "install-a6.ps1").read_text()
 
-    assert "[AllowEmptyString()][string[]]$Arguments" in script
+    assert '"-N", \'""\'' in script
     assert "watch-render-publisher.ps1" in script
     assert "Abu Dhabi E-Ink Publisher Watchdog" in script
     assert "/SC MINUTE /MO 1" in script
