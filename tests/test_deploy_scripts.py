@@ -86,6 +86,7 @@ def test_a6_watchdog_uses_locale_independent_task_state_and_bounds_logs():
     script = (REPO_ROOT / "deploy" / "a6" / "watch-render-publisher.ps1").read_text()
 
     assert "Get-ScheduledTask -TaskName $TaskName" in script
+    assert "Get-ScheduledTaskInfo -TaskName $TaskName" in script
     assert '$task.State -eq "Running"' in script
     assert "[int]$MaxFrameAgeSeconds = 90" in script
     assert "[int]$MaxLogAgeSeconds = 90" in script
@@ -93,6 +94,8 @@ def test_a6_watchdog_uses_locale_independent_task_state_and_bounds_logs():
     assert 'publisher-watchdog-*.log' in script
     assert 'last-successful-publish.txt' in script
     assert "successful publish age" in script
+    assert "withinStartupGrace" in script
+    assert "awaiting first publish within startup grace" in script
 
 
 def test_telegram_bot_runs_at_startup_as_system_with_publisher_identity():

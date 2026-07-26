@@ -27,14 +27,21 @@ function Write-WatchdogLog {
     Write-Host $line
 }
 
-function Get-TaskIsRunning {
+function Get-PublisherTaskStatus {
     try {
         $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+        $taskInfo = Get-ScheduledTaskInfo -TaskName $TaskName -ErrorAction Stop
     }
     catch {
-        return $false
+        return [pscustomobject]@{
+            IsRunning = $false
+            RunAgeSeconds = [double]::PositiveInfinity
+        }
     }
-    return $task.State -eq "Running"
+    return [pscustomobject]@{
+        IsRunning = $task.State -eq "Running"
+        RunAgeSeconds = ((Get-Date) - $taskInfo.LastRunTime).TotalSeconds
+    }
 }
 
 function Get-FileAgeSeconds {
@@ -55,10 +62,12 @@ function Get-LatestPublisherLogAgeSeconds {
     return ((Get-Date) - $latestLog.LastWriteTime).TotalSeconds
 }
 
-$isRunning = Get-TaskIsRunning
+$taskStatus = Get-PublisherTaskStatus
+$isRunning = $taskStatus.IsRunning
 $frameAge = Get-FileAgeSeconds -Path $currentFrame
 $logAge = Get-LatestPublisherLogAgeSeconds
 $successfulPublishAge = Get-FileAgeSeconds -Path $publishHealthFile
+$withinStartupGrace = $isRunning -and $taskStatus.RunAgeSeconds -le $MaxFrameAgeSeconds
 
 $reasons = @()
 if (-not $isRunning) {
@@ -70,16 +79,22 @@ if ($frameAge -gt $MaxFrameAgeSeconds) {
 if ($logAge -gt $MaxLogAgeSeconds) {
     $reasons += ("publisher log age is {0:N1}s" -f $logAge)
 }
-if ($successfulPublishAge -gt $MaxFrameAgeSeconds) {
+if ($successfulPublishAge -gt $MaxFrameAgeSeconds -and -not $withinStartupGrace) {
     $reasons += ("successful publish age is {0:N1}s" -f $successfulPublishAge)
 }
 
 if (-not $reasons) {
+    $publishHealth = if ($successfulPublishAge -le $MaxFrameAgeSeconds) {
+        "successful publish age {0:N1}s" -f $successfulPublishAge
+    }
+    else {
+        "awaiting first publish within startup grace ({0:N1}s task age)" -f $taskStatus.RunAgeSeconds
+    }
     Write-WatchdogLog (
-        "healthy; frame age {0:N1}s, log age {1:N1}s, successful publish age {2:N1}s" -f
+        "healthy; frame age {0:N1}s, log age {1:N1}s, {2}" -f
         $frameAge,
         $logAge,
-        $successfulPublishAge
+        $publishHealth
     )
     exit 0
 }
