@@ -27,6 +27,8 @@ $currentFrame = Join-Path $framesDir "current.png"
 $tempFrame = Join-Path $framesDir "current.tmp.png"
 $publishHealthFile = Join-Path $logsDir "last-successful-publish.txt"
 $maintenanceKeyHandoff = Join-Path $framesDir "maintenance_authorized_key.pub"
+$maintenanceStatusRequest = Join-Path $framesDir "maintenance-status.request"
+$maintenanceStatusOutput = Join-Path $framesDir "maintenance-status.txt"
 
 if ([string]::IsNullOrWhiteSpace($IdentityFile)) {
     $IdentityFile = Join-Path $secretsDir "publisher_ed25519"
@@ -233,6 +235,72 @@ rm -f ~/.ssh/maintenance_authorized_key.pub.tmp
     Write-Log "Installed and removed one-time Pi maintenance public-key handoff."
 }
 
+function Export-OneTimeMaintenanceStatus {
+    if (-not (Test-Path -LiteralPath $maintenanceStatusRequest)) {
+        return
+    }
+
+    $remote = "$($PiUser)@$($PiHost)"
+    $remoteStatus = "/var/lib/abu-dhabi-eink/maintenance-status.txt"
+    $sshOptions = @(
+        "-i", $IdentityFile,
+        "-o", "BatchMode=yes",
+        "-o", "IdentitiesOnly=yes",
+        "-o", "StrictHostKeyChecking=accept-new",
+        "-o", "UserKnownHostsFile=$KnownHostsFile",
+        "-o", "ConnectTimeout=8"
+    )
+    $scpOptions = @(
+        "-q",
+        "-i", $IdentityFile,
+        "-o", "BatchMode=yes",
+        "-o", "IdentitiesOnly=yes",
+        "-o", "StrictHostKeyChecking=accept-new",
+        "-o", "UserKnownHostsFile=$KnownHostsFile",
+        "-o", "ConnectTimeout=8"
+    )
+    $remoteCommand = @"
+set -u
+{
+  echo '=== identity ==='
+  id
+  hostname
+  date --iso-8601=seconds
+  echo '=== ssh authorized-key configuration ==='
+  grep -RhsE '^[[:space:]]*AuthorizedKeysFile|^[[:space:]]*PubkeyAuthentication|^[[:space:]]*Match' /etc/ssh/sshd_config /etc/ssh/sshd_config.d 2>/dev/null || true
+  echo '=== home ssh permissions ==='
+  stat -c '%U:%G %a %n' ~ ~/.ssh ~/.ssh/authorized_keys 2>/dev/null || true
+  ssh-keygen -lf ~/.ssh/authorized_keys 2>/dev/null || true
+  echo '=== display defaults ==='
+  cat /etc/default/ad-eink-display 2>/dev/null || true
+  echo '=== display unit ==='
+  systemctl cat ad-eink-display.service 2>/dev/null || true
+  echo '=== display process ==='
+  ps -eo pid,lstart,args | grep -E '[d]isplay-current|[w]aveshare' || true
+  echo '=== display service state ==='
+  systemctl show ad-eink-display.service -p ActiveState -p SubState -p UnitFileState -p ExecMainStartTimestamp -p ExecMainPID 2>/dev/null || true
+  echo '=== recent display journal ==='
+  journalctl -u ad-eink-display.service -n 100 --no-pager 2>/dev/null || true
+} > '$remoteStatus.tmp'
+mv '$remoteStatus.tmp' '$remoteStatus'
+"@
+
+    Invoke-ExternalCommand `
+        -FilePath "ssh" `
+        -Arguments ($sshOptions + @($remote, $remoteCommand)) `
+        -TimeoutSeconds $PublishCommandTimeoutSeconds `
+        -Description "Pi maintenance status collection"
+
+    Invoke-ExternalCommand `
+        -FilePath "scp" `
+        -Arguments ($scpOptions + @("$($remote):$remoteStatus", $maintenanceStatusOutput)) `
+        -TimeoutSeconds $PublishCommandTimeoutSeconds `
+        -Description "Pi maintenance status copy"
+
+    Remove-Item -LiteralPath $maintenanceStatusRequest -Force
+    Write-Log "Collected and removed one-time Pi maintenance status request."
+}
+
 function Get-RemainingDeadlineSeconds {
     param([Parameter(Mandatory = $true)][datetime]$CycleStarted)
 
@@ -306,6 +374,7 @@ if (-not $SkipPublish -and -not (Test-Path -LiteralPath $IdentityFile)) {
 }
 
 Install-OneTimeMaintenanceKey
+Export-OneTimeMaintenanceStatus
 
 do {
     try {

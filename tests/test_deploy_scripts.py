@@ -45,6 +45,17 @@ def test_a6_publisher_can_install_a_valid_one_time_maintenance_key():
     assert "Publisher SSH key not found" in script
 
 
+def test_a6_publisher_has_fixed_read_only_pi_maintenance_status_flow():
+    script = (REPO_ROOT / "deploy" / "a6" / "run-render-publisher.ps1").read_text()
+
+    assert 'Join-Path $framesDir "maintenance-status.request"' in script
+    assert "function Export-OneTimeMaintenanceStatus" in script
+    assert "systemctl show ad-eink-display.service" in script
+    assert "journalctl -u ad-eink-display.service" in script
+    assert "ssh-keygen -lf ~/.ssh/authorized_keys" in script
+    assert "Export-OneTimeMaintenanceStatus" in script
+
+
 def test_a6_publisher_preserves_render_time_and_enforces_end_to_end_deadline():
     script = (REPO_ROOT / "deploy" / "a6" / "run-render-publisher.ps1").read_text()
 
