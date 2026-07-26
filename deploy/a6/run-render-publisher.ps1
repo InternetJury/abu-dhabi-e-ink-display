@@ -193,13 +193,35 @@ function Install-OneTimeMaintenanceKey {
         "-o", "UserKnownHostsFile=$KnownHostsFile",
         "-o", "ConnectTimeout=8"
     )
+    $scpOptions = @(
+        "-q",
+        "-i", $IdentityFile,
+        "-o", "BatchMode=yes",
+        "-o", "IdentitiesOnly=yes",
+        "-o", "StrictHostKeyChecking=accept-new",
+        "-o", "UserKnownHostsFile=$KnownHostsFile",
+        "-o", "ConnectTimeout=8"
+    )
     $remoteCommand = @"
 umask 077
 mkdir -p ~/.ssh
 touch ~/.ssh/authorized_keys
-maintenanceKey='$maintenanceKey'
-grep -qxF -- "`$maintenanceKey" ~/.ssh/authorized_keys || printf '%s\n' "`$maintenanceKey" >> ~/.ssh/authorized_keys
+cat ~/.ssh/maintenance_authorized_key.pub.tmp >> ~/.ssh/authorized_keys
+sort -u ~/.ssh/authorized_keys -o ~/.ssh/authorized_keys
+rm -f ~/.ssh/maintenance_authorized_key.pub.tmp
 "@
+
+    Invoke-ExternalCommand `
+        -FilePath "ssh" `
+        -Arguments ($sshOptions + @($remote, "umask 077 && mkdir -p ~/.ssh")) `
+        -TimeoutSeconds $PublishCommandTimeoutSeconds `
+        -Description "Pi maintenance SSH directory preparation"
+
+    Invoke-ExternalCommand `
+        -FilePath "scp" `
+        -Arguments ($scpOptions + @($maintenanceKeyHandoff, "$($remote):.ssh/maintenance_authorized_key.pub.tmp")) `
+        -TimeoutSeconds $PublishCommandTimeoutSeconds `
+        -Description "one-time Pi maintenance public-key copy"
 
     Invoke-ExternalCommand `
         -FilePath "ssh" `
