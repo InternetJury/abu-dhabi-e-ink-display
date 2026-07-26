@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from time import mktime
@@ -15,7 +16,7 @@ from ribbon.settings import SETTINGS
 
 
 LOCAL_TZ = ZoneInfo(SETTINGS.timezone)
-CACHE_VERSION = 3
+CACHE_VERSION = 4
 
 
 @dataclass(frozen=True)
@@ -35,7 +36,9 @@ class HeadlineCandidate:
 ALLOWLIST = {
     "reuters": "Reuters",
     "the national": "The National",
+    "thenationalnews.com": "The National",
     "wam": "WAM",
+    "wam.ae": "WAM",
     "the hindu": "The Hindu",
     "the indian express": "The Indian Express",
     "indian express": "The Indian Express",
@@ -65,6 +68,49 @@ BLOCKED_TITLE_FRAGMENTS = (
     "viral",
     "trending",
     "opinion:",
+    "today's latest stories",
+    "latest stories",
+    "latest news",
+)
+
+LOW_SIGNAL_TITLE_PATTERNS = (
+    re.compile(r"\bformula\s*(?:one|1)\b", re.IGNORECASE),
+    re.compile(r"\bf1\b", re.IGNORECASE),
+    re.compile(r"\bgrand prix\b", re.IGNORECASE),
+    re.compile(r"\bknockout (?:win|victory)\b", re.IGNORECASE),
+    re.compile(r"\bUFC\b", re.IGNORECASE),
+    re.compile(r"\bMMA\b", re.IGNORECASE),
+    re.compile(r"\bin pictures\b", re.IGNORECASE),
+)
+
+WIRE_SLUG_PREFIX = re.compile(
+    r"^(?:NIRBULL|NBULL|RPT|WRAPUP|FACTBOX|EXPLAINER|UPDATE\s*\d*)\s*[-:|]?\s+",
+    re.IGNORECASE,
+)
+
+TICKER_ONLY_TITLE = re.compile(r"^[A-Z0-9]{1,12}(?:[.:-][A-Z0-9]{1,12})+$")
+
+SOURCE_SUFFIX = re.compile(
+    r"\s+-\s+(?:thenationalnews\.com|reuters|wam|the hindu|the indian express)$",
+    re.IGNORECASE,
+)
+
+SIGNIFICANCE_KEYWORDS = (
+    "budget",
+    "court",
+    "defence",
+    "disaster",
+    "economy",
+    "election",
+    "emergency",
+    "government",
+    "inflation",
+    "minister",
+    "parliament",
+    "policy",
+    "security",
+    "strike",
+    "war",
 )
 
 INDIA_KEYWORDS = (
@@ -103,11 +149,14 @@ class RSSHeadlineProvider(HeadlineProvider):
             if "thehindu.com" in lower or "indianexpress.com" in lower:
                 region = "india"
                 priority = 2
-            elif "thenationalnews.com" in lower or "wam.ae" in lower:
+            elif "thenationalnews.com" in lower:
+                region = "global"
+                priority = 0
+            elif "wam.ae" in lower:
                 region = "uae"
                 priority = 0
             elif "reuters.com" in lower:
-                region = "uae"
+                region = "global"
                 priority = 1
             else:
                 region = "global"
@@ -156,12 +205,25 @@ class RSSHeadlineProvider(HeadlineProvider):
         suffix = f" - {source_name}"
         if cleaned.endswith(suffix):
             cleaned = cleaned[: -len(suffix)].strip()
+        cleaned = SOURCE_SUFFIX.sub("", cleaned).strip()
+        cleaned = WIRE_SLUG_PREFIX.sub("", cleaned).strip()
         return cleaned
 
     @classmethod
     def _is_clickbait(cls, title: str) -> bool:
         title_norm = cls._normalize_text(title)
-        return any(fragment in title_norm for fragment in BLOCKED_TITLE_FRAGMENTS)
+        return any(fragment in title_norm for fragment in BLOCKED_TITLE_FRAGMENTS) or any(
+            pattern.search(title) for pattern in LOW_SIGNAL_TITLE_PATTERNS
+        )
+
+    @classmethod
+    def _is_meaningful_article_title(cls, title: str) -> bool:
+        cleaned = " ".join((title or "").strip().split())
+        if TICKER_ONLY_TITLE.fullmatch(cleaned):
+            return False
+        if len(cleaned) < 30 or len(cleaned.split()) < 5:
+            return False
+        return not cls._is_clickbait(cleaned)
 
     @classmethod
     def _is_blocked_source(cls, source_name: str) -> bool:
@@ -213,7 +275,7 @@ class RSSHeadlineProvider(HeadlineProvider):
                     continue
 
                 title = self._clean_title(entry.get("title", ""), canonical_source)
-                if not title or self._is_clickbait(title):
+                if not self._is_meaningful_article_title(title):
                     continue
 
                 key = self._normalize_text(title)
@@ -238,7 +300,7 @@ class RSSHeadlineProvider(HeadlineProvider):
         return candidates
 
     @classmethod
-    def _candidate_score(cls, candidate: HeadlineCandidate) -> tuple[int, int, float]:
+    def _candidate_score(cls, candidate: HeadlineCandidate) -> tuple[int, int, int, float]:
         source_rank = {
             "Reuters": 0,
             "The National": 1,
@@ -246,8 +308,10 @@ class RSSHeadlineProvider(HeadlineProvider):
             "The Hindu": 3,
             "The Indian Express": 4,
         }.get(candidate.item.source_name, 9)
+        title_norm = cls._normalize_text(candidate.item.title)
+        significance_rank = 0 if any(keyword in title_norm for keyword in SIGNIFICANCE_KEYWORDS) else 1
         published = candidate.item.published_at.timestamp() if candidate.item.published_at else 0.0
-        return (candidate.priority, source_rank, -published)
+        return (significance_rank, candidate.priority, source_rank, -published)
 
     @classmethod
     def _select_headlines(cls, candidates: list[HeadlineCandidate], limit: int) -> list[HeadlineItem]:
@@ -261,7 +325,17 @@ class RSSHeadlineProvider(HeadlineProvider):
             used_titles.add(cls._normalize_text(india_candidates[0].item.title))
 
         uae_candidates = [candidate for candidate in ranked if candidate.region == "uae"]
+        uae_quota = min(4, max(0, limit - len(selected)))
         for candidate in uae_candidates:
+            if sum(item.region == "uae" for item in selected) >= uae_quota:
+                break
+            title_key = cls._normalize_text(candidate.item.title)
+            if title_key in used_titles:
+                continue
+            selected.append(candidate)
+            used_titles.add(title_key)
+
+        for candidate in (item for item in ranked if item.region != "india"):
             if len(selected) >= limit:
                 break
             title_key = cls._normalize_text(candidate.item.title)

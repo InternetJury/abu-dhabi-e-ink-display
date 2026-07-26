@@ -128,6 +128,19 @@ if (-not (Test-Path -LiteralPath $publisherKey)) {
         -Description "Publisher SSH key generation"
 }
 
+# The publisher task runs as SYSTEM. Windows OpenSSH rejects a private key when
+# another interactive account can read it, even when that account created it.
+foreach ($arguments in @(
+    @($publisherKey, "/inheritance:r"),
+    @($publisherKey, "/setowner", "SYSTEM"),
+    @($publisherKey, "/grant:r", "SYSTEM:F", "BUILTIN\Administrators:F")
+)) {
+    Invoke-CheckedCommand `
+        -FilePath "icacls.exe" `
+        -Arguments $arguments `
+        -Description "Publisher private-key ACL update"
+}
+
 if (-not (Test-Path $appDir)) {
     Write-Host "Cloning project into $appDir..."
     Invoke-CheckedCommand -FilePath "git" -Arguments @("clone", $RepoUrl, $appDir) -Description "Project clone"

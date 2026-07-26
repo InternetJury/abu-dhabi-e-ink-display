@@ -25,6 +25,7 @@ $secretsDir = Join-Path $InstallRoot "secrets"
 $cli = Join-Path $appDir ".venv\Scripts\mobility-ribbon.exe"
 $currentFrame = Join-Path $framesDir "current.png"
 $tempFrame = Join-Path $framesDir "current.tmp.png"
+$publishHealthFile = Join-Path $logsDir "last-successful-publish.txt"
 
 if ([string]::IsNullOrWhiteSpace($IdentityFile)) {
     $IdentityFile = Join-Path $secretsDir "publisher_ed25519"
@@ -36,6 +37,33 @@ if ([string]::IsNullOrWhiteSpace($KnownHostsFile)) {
 $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $InstallRoot "playwright"
 
 New-Item -ItemType Directory -Force -Path $framesDir, $logsDir, $secretsDir | Out-Null
+
+function Repair-PublisherIdentityAcl {
+    if (-not (Test-Path -LiteralPath $IdentityFile)) {
+        return
+    }
+
+    $currentSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    if ($currentSid -ne "S-1-5-18") {
+        return
+    }
+
+    # OpenSSH rejects a private key when an interactive account can read it.
+    # Repair this on every SYSTEM task start so reinstalls cannot silently stop
+    # frame delivery while local rendering continues to look healthy.
+    foreach ($arguments in @(
+        @($IdentityFile, "/inheritance:r"),
+        @($IdentityFile, "/setowner", "SYSTEM"),
+        @($IdentityFile, "/grant:r", "SYSTEM:F", "BUILTIN\Administrators:F")
+    )) {
+        & icacls.exe @arguments | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to secure publisher identity $IdentityFile with icacls exit code $LASTEXITCODE."
+        }
+    }
+}
+
+Repair-PublisherIdentityAcl
 
 function Invoke-StorageCleanup {
     $cutoff = (Get-Date).AddDays(-1 * $LogRetentionDays)
@@ -238,6 +266,7 @@ do {
         Move-Item -Path $tempFrame -Destination $currentFrame -Force
         $renderedAtUnixSeconds = [DateTimeOffset]::new($renderStarted).ToUnixTimeSeconds()
         Publish-Frame -CycleStarted $renderStarted -RenderedAtUnixSeconds $renderedAtUnixSeconds
+        Set-Content -LiteralPath $publishHealthFile -Value ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())
         Write-Log (
             "Rendered and published $currentFrame to $($PiUser)@$($PiHost):$RemotePath in {0:N1}s" -f
             $renderAgeSeconds

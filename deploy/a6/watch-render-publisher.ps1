@@ -11,6 +11,7 @@ $ErrorActionPreference = "Stop"
 $framesDir = Join-Path $InstallRoot "frames"
 $logsDir = Join-Path $InstallRoot "logs"
 $currentFrame = Join-Path $framesDir "current.png"
+$publishHealthFile = Join-Path $logsDir "last-successful-publish.txt"
 
 New-Item -ItemType Directory -Force -Path $logsDir | Out-Null
 Get-ChildItem -Path $logsDir -Filter "publisher-watchdog-*.log" -File -ErrorAction SilentlyContinue |
@@ -57,6 +58,7 @@ function Get-LatestPublisherLogAgeSeconds {
 $isRunning = Get-TaskIsRunning
 $frameAge = Get-FileAgeSeconds -Path $currentFrame
 $logAge = Get-LatestPublisherLogAgeSeconds
+$successfulPublishAge = Get-FileAgeSeconds -Path $publishHealthFile
 
 $reasons = @()
 if (-not $isRunning) {
@@ -68,9 +70,17 @@ if ($frameAge -gt $MaxFrameAgeSeconds) {
 if ($logAge -gt $MaxLogAgeSeconds) {
     $reasons += ("publisher log age is {0:N1}s" -f $logAge)
 }
+if ($successfulPublishAge -gt $MaxFrameAgeSeconds) {
+    $reasons += ("successful publish age is {0:N1}s" -f $successfulPublishAge)
+}
 
 if (-not $reasons) {
-    Write-WatchdogLog ("healthy; frame age {0:N1}s, log age {1:N1}s" -f $frameAge, $logAge)
+    Write-WatchdogLog (
+        "healthy; frame age {0:N1}s, log age {1:N1}s, successful publish age {2:N1}s" -f
+        $frameAge,
+        $logAge,
+        $successfulPublishAge
+    )
     exit 0
 }
 

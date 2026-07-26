@@ -42,6 +42,10 @@ def test_a6_publisher_preserves_render_time_and_enforces_end_to_end_deadline():
     assert "Get-RemainingDeadlineSeconds" in script
     assert "touch -m -d '@$RenderedAtUnixSeconds'" in script
     assert "Publish-Frame -CycleStarted $renderStarted" in script
+    assert "last-successful-publish.txt" in script
+    assert "Repair-PublisherIdentityAcl" in script
+    assert 'S-1-5-18' in script
+    assert '"SYSTEM:F", "BUILTIN\\Administrators:F"' in script
 
 
 def test_a6_installer_registers_publisher_watchdog():
@@ -61,6 +65,9 @@ def test_a6_installer_registers_publisher_watchdog():
     assert "publisher_ed25519" in script
     assert "publisher_known_hosts" in script
     assert "PLAYWRIGHT_BROWSERS_PATH" in script
+    assert '"/setowner", "SYSTEM"' in script
+    assert '"/grant:r", "SYSTEM:F", "BUILTIN\\Administrators:F"' in script
+    assert 'Publisher private-key ACL update' in script
 
 
 def test_a6_ssh_repair_persists_for_tailscale_and_local_networks():
@@ -82,6 +89,8 @@ def test_a6_watchdog_uses_locale_independent_task_state_and_bounds_logs():
     assert "[int]$MaxLogAgeSeconds = 90" in script
     assert "[int]$LogRetentionDays = 14" in script
     assert 'publisher-watchdog-*.log' in script
+    assert 'last-successful-publish.txt' in script
+    assert "successful publish age" in script
 
 
 def test_telegram_bot_runs_at_startup_as_system_with_publisher_identity():
