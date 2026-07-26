@@ -244,6 +244,7 @@ function Export-OneTimeMaintenanceStatus {
     $remoteStatus = "/var/lib/abu-dhabi-eink/maintenance-status.txt"
     $remoteExporter = "/var/lib/abu-dhabi-eink/export-maintenance-status.sh"
     $localExporter = Join-Path $appDir "deploy\pi\export-maintenance-status.sh"
+    $localExporterLf = Join-Path $framesDir "export-maintenance-status.tmp.sh"
     $sshOptions = @(
         "-i", $IdentityFile,
         "-o", "BatchMode=yes",
@@ -265,23 +266,35 @@ function Export-OneTimeMaintenanceStatus {
         throw "Pi maintenance exporter not found at $localExporter."
     }
 
-    Invoke-ExternalCommand `
-        -FilePath "scp" `
-        -Arguments ($scpOptions + @($localExporter, "$($remote):$remoteExporter")) `
-        -TimeoutSeconds $PublishCommandTimeoutSeconds `
-        -Description "Pi maintenance exporter copy"
+    $exporterText = [IO.File]::ReadAllText($localExporter).Replace("`r`n", "`n")
+    [IO.File]::WriteAllText(
+        $localExporterLf,
+        $exporterText,
+        (New-Object Text.UTF8Encoding($false))
+    )
 
-    Invoke-ExternalCommand `
-        -FilePath "ssh" `
-        -Arguments ($sshOptions + @($remote, "sh '$remoteExporter' '$remoteStatus'")) `
-        -TimeoutSeconds $PublishCommandTimeoutSeconds `
-        -Description "Pi maintenance status collection"
+    try {
+        Invoke-ExternalCommand `
+            -FilePath "scp" `
+            -Arguments ($scpOptions + @($localExporterLf, "$($remote):$remoteExporter")) `
+            -TimeoutSeconds $PublishCommandTimeoutSeconds `
+            -Description "Pi maintenance exporter copy"
 
-    Invoke-ExternalCommand `
-        -FilePath "scp" `
-        -Arguments ($scpOptions + @("$($remote):$remoteStatus", $maintenanceStatusOutput)) `
-        -TimeoutSeconds $PublishCommandTimeoutSeconds `
-        -Description "Pi maintenance status copy"
+        Invoke-ExternalCommand `
+            -FilePath "ssh" `
+            -Arguments ($sshOptions + @($remote, "sh '$remoteExporter' '$remoteStatus'")) `
+            -TimeoutSeconds $PublishCommandTimeoutSeconds `
+            -Description "Pi maintenance status collection"
+
+        Invoke-ExternalCommand `
+            -FilePath "scp" `
+            -Arguments ($scpOptions + @("$($remote):$remoteStatus", $maintenanceStatusOutput)) `
+            -TimeoutSeconds $PublishCommandTimeoutSeconds `
+            -Description "Pi maintenance status copy"
+    }
+    finally {
+        Remove-Item -LiteralPath $localExporterLf -Force -ErrorAction SilentlyContinue
+    }
 
     Remove-Item -LiteralPath $maintenanceStatusRequest -Force
     Write-Log "Collected and removed one-time Pi maintenance status request."

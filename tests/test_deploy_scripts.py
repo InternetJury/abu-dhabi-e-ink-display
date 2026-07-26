@@ -51,6 +51,7 @@ def test_a6_publisher_has_fixed_read_only_pi_maintenance_status_flow():
     assert 'Join-Path $framesDir "maintenance-status.request"' in script
     assert "function Export-OneTimeMaintenanceStatus" in script
     assert "export-maintenance-status.sh" in script
+    assert '.Replace("`r`n", "`n")' in script
     assert "Export-OneTimeMaintenanceStatus" in script
     assert "Pi maintenance status request failed" in script
 
