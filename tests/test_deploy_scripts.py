@@ -96,6 +96,9 @@ def test_a6_watchdog_uses_locale_independent_task_state_and_bounds_logs():
     assert "successful publish age" in script
     assert "withinStartupGrace" in script
     assert "awaiting first publish within startup grace" in script
+    assert 'TelegramTaskName = "Abu Dhabi E-Ink Telegram Control Bot"' in script
+    assert "Start-TelegramTaskIfNeeded" in script
+    assert 'schtasks /Run /TN $TelegramTaskName' in script
 
 
 def test_telegram_bot_runs_at_startup_as_system_with_publisher_identity():

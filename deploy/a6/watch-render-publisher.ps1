@@ -1,6 +1,7 @@
 param(
     [string]$InstallRoot = "C:\AbuDhabiEInk",
     [string]$TaskName = "Abu Dhabi E-Ink Render Publisher",
+    [string]$TelegramTaskName = "Abu Dhabi E-Ink Telegram Control Bot",
     [int]$MaxFrameAgeSeconds = 90,
     [int]$MaxLogAgeSeconds = 90,
     [int]$LogRetentionDays = 14
@@ -61,6 +62,24 @@ function Get-LatestPublisherLogAgeSeconds {
     }
     return ((Get-Date) - $latestLog.LastWriteTime).TotalSeconds
 }
+
+function Start-TelegramTaskIfNeeded {
+    try {
+        $telegramTask = Get-ScheduledTask -TaskName $TelegramTaskName -ErrorAction Stop
+    }
+    catch {
+        return
+    }
+
+    if ($telegramTask.State -eq "Running") {
+        return
+    }
+
+    Write-WatchdogLog "starting Telegram control task because its state is $($telegramTask.State)"
+    schtasks /Run /TN $TelegramTaskName 2>&1 | ForEach-Object { Write-WatchdogLog $_ }
+}
+
+Start-TelegramTaskIfNeeded
 
 $taskStatus = Get-PublisherTaskStatus
 $isRunning = $taskStatus.IsRunning

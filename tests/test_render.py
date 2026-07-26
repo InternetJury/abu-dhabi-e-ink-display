@@ -39,10 +39,18 @@ def test_weekend_render_matches_locked_reference_hash():
     assert sha1(image.tobytes()).hexdigest() == "cee0717269d5206064f37cd14a7918569780ad49"
 
 
+def test_news_timestamp_includes_dubai_date_and_time():
+    renderer = RibbonRenderer()
+    published_at = datetime(2026, 7, 26, 16, 12, tzinfo=ZoneInfo("UTC"))
+
+    assert renderer._format_news_timestamp(published_at) == "26 JUL 20:12"
+    assert renderer._format_news_timestamp(None) == "-- --- --:--"
+
+
 def test_ambient_render_matches_locked_reference_hash():
     snapshot = load_fixture_snapshot("ambient_info")
     image = RibbonRenderer().render(snapshot)
-    assert sha1(image.tobytes()).hexdigest() == "7620a1dcbb3d970d3f10826b4d2d974eb997cfe7"
+    assert sha1(image.tobytes()).hexdigest() == "b03f8ecb8eebe61a69b051dae7a046c5a86dc780"
 
 
 def test_weekday_hero_destination_hybrid_fit_stays_inside_safe_width():

@@ -561,7 +561,7 @@ class RibbonRenderer:
         headline_font = self._font_space(24, 700)
 
         self._draw_text(draw, left, top, "HEADLINES", title_font, BLACK)
-        updated_text = f"LAST UPDATED {snapshot.generated_at.astimezone(LOCAL_TZ).strftime('%H:%M')}"
+        updated_text = f"LAST UPDATED {self._format_news_timestamp(snapshot.generated_at)}"
         updated_w = self._text_width(draw, updated_text, updated_font)
         self._draw_text(draw, left + usable_w - updated_w, top + 12, updated_text, updated_font, TEXT_MUTED)
         divider_y = top + self._text_height(draw, "HEADLINES", title_font) + 24
@@ -612,10 +612,16 @@ class RibbonRenderer:
         headline_h = self._text_height(draw, "Ag", headline_font)
 
         for index, headline in enumerate(headlines):
-            source_text = headline.source_name.upper()
-            published_text = headline.published_at.astimezone(LOCAL_TZ).strftime("%H:%M") if headline.published_at else "--:--"
-            self._draw_text(draw, left, current_y, source_text, meta_font, TEXT_MUTED)
+            published_text = self._format_news_timestamp(headline.published_at)
             time_w = self._text_width(draw, published_text, time_font)
+            source_width = max(24, usable_w - time_w - 12)
+            source_text = self._ellipsize(
+                draw,
+                headline.source_name.upper(),
+                meta_font,
+                source_width,
+            )
+            self._draw_text(draw, left, current_y, source_text, meta_font, TEXT_MUTED)
             self._draw_text(draw, left + usable_w - time_w, current_y + 1, published_text, time_font, TEXT_MUTED)
 
             lines = self._clamp_lines(draw, headline.title, headline_font, usable_w, max_lines)
@@ -1057,6 +1063,11 @@ class RibbonRenderer:
         if value is None:
             return "--:--"
         return value.astimezone(LOCAL_TZ).strftime("%H:%M")
+
+    def _format_news_timestamp(self, value: datetime | None) -> str:
+        if value is None:
+            return "-- --- --:--"
+        return value.astimezone(LOCAL_TZ).strftime("%d %b %H:%M").upper()
 
     def _format_departure_time(self, departure: BusDepartureItem) -> str:
         target = departure.expected_at or departure.scheduled_at
