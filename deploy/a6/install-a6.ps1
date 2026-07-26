@@ -34,7 +34,7 @@ function Install-WingetPackage {
 function Invoke-CheckedCommand {
     param(
         [Parameter(Mandatory = $true)][string]$FilePath,
-        [Parameter(Mandatory = $true)][string[]]$Arguments,
+        [Parameter(Mandatory = $true)][AllowEmptyString()][string[]]$Arguments,
         [Parameter(Mandatory = $true)][string]$Description
     )
 
