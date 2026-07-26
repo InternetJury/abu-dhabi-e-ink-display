@@ -158,13 +158,13 @@ First ensure SSH to the A6 works over Tailscale:
 ssh <A6_TAILSCALE_IP_OR_HOSTNAME> hostname
 ```
 
-If this times out, run this script from an elevated Administrator PowerShell session on the A6:
+If this times out, run the repair script on the A6. It requests Administrator access through the normal Windows UAC prompt:
 
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File C:\Path\To\app\deploy\a6\repair-ssh.ps1
 ```
 
-If the repo is not on the A6 yet, copy the script over manually or paste its contents into an elevated PowerShell window. After it completes, retry `ssh <A6_TAILSCALE_IP_OR_HOSTNAME> hostname` from this PC.
+Approve the UAC prompt when Windows asks. If the repo is not on the A6 yet, download the public `repair-ssh.ps1` file first; it contains no credentials or device-specific secrets. After it completes, retry `ssh <A6_TAILSCALE_IP_OR_HOSTNAME> hostname` from this PC.
 
 On the A6, run PowerShell as Administrator:
 

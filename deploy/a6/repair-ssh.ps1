@@ -7,7 +7,19 @@ function Test-IsAdmin {
 }
 
 if (-not (Test-IsAdmin)) {
-    throw "Run this script from an elevated Administrator PowerShell session on the A6 Mini."
+    if ([string]::IsNullOrWhiteSpace($PSCommandPath)) {
+        throw "Unable to determine the script path for Administrator elevation."
+    }
+
+    Write-Host "Requesting Administrator access to enable OpenSSH Server..."
+    $elevatedArguments = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    $elevated = Start-Process `
+        -FilePath "powershell.exe" `
+        -ArgumentList $elevatedArguments `
+        -Verb RunAs `
+        -Wait `
+        -PassThru
+    exit $elevated.ExitCode
 }
 
 Write-Host "Installing or enabling Windows OpenSSH Server..."

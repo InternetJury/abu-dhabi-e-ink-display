@@ -65,6 +65,8 @@ def test_a6_installer_registers_publisher_watchdog():
 def test_a6_ssh_repair_persists_for_tailscale_and_local_networks():
     script = (REPO_ROOT / "deploy" / "a6" / "repair-ssh.ps1").read_text()
 
+    assert "-Verb RunAs" in script
+    assert "$PSCommandPath" in script
     assert "Set-Service -Name sshd -StartupType Automatic" in script
     assert "-Profile Any" in script
     assert '"100.64.0.0/10", "LocalSubnet"' in script
