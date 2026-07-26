@@ -39,6 +39,8 @@ The scheduler is time-zone aware (`Asia/Dubai`) and currently uses a 60-second r
 - weekend one-minute alternation between multi-stop mode and ambient mode
 - ambient mode outside the commute priority window
 
+Provider caches are intentionally independent of the screen cadence: weather/AQI refreshes every 10 minutes, markets every 15 minutes, and curated headlines every 30 minutes. Each minute render uses the newest available cached data and preserves last-good values when an upstream source is temporarily unavailable.
+
 ### Renderer
 
 The renderer is a Pillow-based locked-layout system with vendored fonts and Material Symbols. It follows approved Stitch exports and treats them as source-of-truth design references, not loose inspiration.

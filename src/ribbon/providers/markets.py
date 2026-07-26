@@ -30,7 +30,12 @@ class CompositeMarketProvider(MarketProvider):
     def _parse_nse_timestamp(raw: str | None) -> datetime | None:
         if not raw:
             return None
-        return datetime.strptime(raw, "%d-%b-%Y %H:%M:%S").replace(tzinfo=ZoneInfo("Asia/Kolkata"))
+        for date_format in ("%d-%b-%Y %H:%M:%S", "%d-%b-%Y %H:%M"):
+            try:
+                return datetime.strptime(raw, date_format).replace(tzinfo=ZoneInfo("Asia/Kolkata"))
+            except ValueError:
+                continue
+        return None
 
     def _write_cache(self, items: list[MarketIndexItem]) -> None:
         SETTINGS.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -67,7 +72,9 @@ class CompositeMarketProvider(MarketProvider):
             (
                 row
                 for row in rows
-                if row.get("symbol") == "NIFTY 50" or row.get("identifier") == "NIFTY 50"
+                if row.get("symbol") == "NIFTY 50"
+                or row.get("identifier") == "NIFTY 50"
+                or row.get("index") == "NIFTY 50"
             ),
             None,
         )
@@ -76,9 +83,12 @@ class CompositeMarketProvider(MarketProvider):
         if target is None:
             raise ProviderError("NSE payload missing NIFTY 50 record")
 
-        percent_change = float(target.get("pChange")) if target.get("pChange") is not None else None
-        raw_change = float(target.get("change")) if target.get("change") is not None else None
-        current_value = float(target.get("lastPrice")) if target.get("lastPrice") is not None else None
+        percent_value = target.get("pChange", target.get("percentChange"))
+        raw_value = target.get("change", target.get("variation"))
+        current_value_raw = target.get("lastPrice", target.get("last"))
+        percent_change = float(percent_value) if percent_value is not None else None
+        raw_change = float(raw_value) if raw_value is not None else None
+        current_value = float(current_value_raw) if current_value_raw is not None else None
         observed_at = cls._parse_nse_timestamp(payload.get("timestamp") or target.get("lastUpdateTime")) or now
         return MarketIndexItem(
             code="NIFTY",
@@ -144,6 +154,35 @@ class CompositeMarketProvider(MarketProvider):
             observed_at=observed_at,
         )
 
+    @classmethod
+    def _parse_yahoo_chart_payload(cls, payload: dict, now: datetime) -> MarketIndexItem:
+        results = payload.get("chart", {}).get("result") or []
+        if not results:
+            raise ProviderError("S&P 500 chart response returned no results")
+        meta = results[0].get("meta") or {}
+        current_value_raw = meta.get("regularMarketPrice")
+        previous_close_raw = meta.get("chartPreviousClose", meta.get("previousClose"))
+        if current_value_raw is None or previous_close_raw is None:
+            raise ProviderError("S&P 500 chart response is missing price data")
+
+        current_value = float(current_value_raw)
+        previous_close = float(previous_close_raw)
+        raw_change = round(current_value - previous_close, 2)
+        percent_change = round((raw_change / previous_close) * 100, 2) if previous_close else None
+        observed_at = now
+        if meta.get("regularMarketTime") is not None:
+            observed_at = datetime.fromtimestamp(int(meta["regularMarketTime"]), tz=ZoneInfo("UTC"))
+
+        return MarketIndexItem(
+            code="SPX",
+            label="S&P 500",
+            current_value=current_value,
+            raw_change=raw_change,
+            percent_change=percent_change,
+            direction=cls._direction(percent_change),
+            observed_at=observed_at,
+        )
+
     def _fetch_nifty(self, now: datetime) -> MarketIndexItem:
         headers = {
             "user-agent": SETTINGS.darbi_user_agent,
@@ -151,8 +190,7 @@ class CompositeMarketProvider(MarketProvider):
             "referer": "https://www.nseindia.com/",
         }
         response = httpx.get(
-            "https://www.nseindia.com/api/equity-stockIndices",
-            params={"index": "NIFTY 50"},
+            "https://www.nseindia.com/api/allIndices",
             headers=headers,
             timeout=20,
         )
@@ -160,9 +198,14 @@ class CompositeMarketProvider(MarketProvider):
         return self._parse_nse_payload(response.json(), now)
 
     def _fetch_sp500(self, now: datetime) -> MarketIndexItem:
-        response = httpx.get("https://stooq.com/q/l/?s=%5Espx&i=d", timeout=20)
+        response = httpx.get(
+            "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC",
+            params={"range": "5d", "interval": "1d"},
+            headers={"user-agent": SETTINGS.darbi_user_agent},
+            timeout=20,
+        )
         response.raise_for_status()
-        return self._parse_stooq_csv(response.text, now)
+        return self._parse_yahoo_chart_payload(response.json(), now)
 
     def fetch(self, now: datetime) -> list[MarketIndexItem]:
         cached = self._fresh_cache(now)
@@ -170,13 +213,24 @@ class CompositeMarketProvider(MarketProvider):
             return cached
 
         try:
-            items = [self._fetch_nifty(now), self._fetch_sp500(now)]
-        except Exception as exc:
+            _, stale_items = self._read_cache()
+        except Exception:
+            stale_items = []
+        stale_by_code = {item.code.upper(): item for item in stale_items}
+
+        items: list[MarketIndexItem] = []
+        errors: list[str] = []
+        for code, fetcher in (("NIFTY", self._fetch_nifty), ("SPX", self._fetch_sp500)):
             try:
-                _, cached_items = self._read_cache()
-                return cached_items
-            except ProviderError as cache_exc:
-                raise ProviderError(f"Market fetch failed and cache missing: {exc}") from cache_exc
+                items.append(fetcher(now))
+            except Exception as exc:
+                if code in stale_by_code:
+                    items.append(stale_by_code[code])
+                else:
+                    errors.append(f"{code}: {exc}")
+
+        if not items:
+            raise ProviderError(f"Market fetch failed and cache missing: {'; '.join(errors)}")
 
         self._write_cache(items)
         return items

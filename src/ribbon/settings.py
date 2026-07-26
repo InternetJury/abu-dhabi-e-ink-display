@@ -76,7 +76,7 @@ SETTINGS = ProjectSettings(
         "https://www.thehindu.com/news/national/feeder/default.rss",
         "https://indianexpress.com/section/india/feed/",
     ),
-    headline_cache_ttl_minutes=60,
+    headline_cache_ttl_minutes=30,
     output_dir=OUTPUT_DIR,
     frame_output_dir=OUTPUT_DIR / "frames",
     demo_output_dir=OUTPUT_DIR / "demo_runs",

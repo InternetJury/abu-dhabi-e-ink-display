@@ -63,8 +63,8 @@ The repo also keeps two review-only comparison previews that simulate an all-del
 
 - Bus departures: official Darbi web surfaces via MMJPv5, with a Playwright/XHR recovery path and last-good stale fallback
 - Weather and AQI: Open-Meteo
-- Headlines: curated RSS pipeline with UAE-first ranking and one guaranteed India headline when available
-- Markets: NSE NIFTY + Stooq S&P 500
+- Headlines: curated RSS pipeline refreshed every 30 minutes, with UAE-first ranking and one guaranteed India headline when available
+- Markets: NSE NIFTY + S&P 500 chart data, cached for 15 minutes with last-good fallback
 
 The Darbi live-data root cause and recovery design are documented in [docs/darbi-rca.md](docs/darbi-rca.md).
 

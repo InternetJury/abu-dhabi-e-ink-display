@@ -36,7 +36,7 @@ def test_weekday_center_crop_matches_locked_reference_hash():
 def test_weekend_render_matches_locked_reference_hash():
     snapshot = load_fixture_snapshot("weekend_multi_stop")
     image = RibbonRenderer().render(snapshot)
-    assert sha1(image.tobytes()).hexdigest() == "cee0717269d5206064f37cd14a7918569780ad49"
+    assert sha1(image.tobytes()).hexdigest() == "d09fd06fe33804f4154b5a7203a9d0ebffae0854"
 
 
 def test_news_timestamp_includes_dubai_date_and_time():
@@ -50,7 +50,7 @@ def test_news_timestamp_includes_dubai_date_and_time():
 def test_ambient_render_matches_locked_reference_hash():
     snapshot = load_fixture_snapshot("ambient_info")
     image = RibbonRenderer().render(snapshot)
-    assert sha1(image.tobytes()).hexdigest() == "b03f8ecb8eebe61a69b051dae7a046c5a86dc780"
+    assert sha1(image.tobytes()).hexdigest() == "580ea37823c420dc6158976b35c7dd80d703c990"
 
 
 def test_weekday_hero_destination_hybrid_fit_stays_inside_safe_width():

@@ -429,7 +429,7 @@ class RibbonRenderer:
             destination_font,
             BLACK,
         )
-        self._draw_text(draw, x1 - pad - time_w, y0 + 61, time_text, time_font, TEXT_MUTED)
+        self._draw_text(draw, x1 - pad - time_w, y0 + 61, time_text, time_font, BLACK)
 
     def _draw_weekend_footer(self, draw: ImageDraw.ImageDraw, snapshot: RibbonSnapshot, footer_top: int, footer_h: int) -> None:
         now = snapshot.generated_at.astimezone(LOCAL_TZ)
@@ -563,7 +563,7 @@ class RibbonRenderer:
         self._draw_text(draw, left, top, "HEADLINES", title_font, BLACK)
         updated_text = f"LAST UPDATED {self._format_news_timestamp(snapshot.generated_at)}"
         updated_w = self._text_width(draw, updated_text, updated_font)
-        self._draw_text(draw, left + usable_w - updated_w, top + 12, updated_text, updated_font, TEXT_MUTED)
+        self._draw_text(draw, left + usable_w - updated_w, top + 12, updated_text, updated_font, BLACK)
         divider_y = top + self._text_height(draw, "HEADLINES", title_font) + 24
         draw.line((left, divider_y, left + usable_w, divider_y), fill=HEAVY_RULE, width=2)
 
@@ -621,8 +621,8 @@ class RibbonRenderer:
                 meta_font,
                 source_width,
             )
-            self._draw_text(draw, left, current_y, source_text, meta_font, TEXT_MUTED)
-            self._draw_text(draw, left + usable_w - time_w, current_y + 1, published_text, time_font, TEXT_MUTED)
+            self._draw_text(draw, left, current_y, source_text, meta_font, BLACK)
+            self._draw_text(draw, left + usable_w - time_w, current_y + 1, published_text, time_font, BLACK)
 
             lines = self._clamp_lines(draw, headline.title, headline_font, usable_w, max_lines)
             self._draw_lines(draw, left, current_y + meta_h + 8, lines, headline_font, BLACK, 2)
