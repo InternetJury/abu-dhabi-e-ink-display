@@ -208,9 +208,11 @@ function Install-OneTimeMaintenanceKey {
 umask 077
 mkdir -p ~/.ssh
 touch ~/.ssh/authorized_keys
-printf '\n' >> ~/.ssh/authorized_keys
-cat ~/.ssh/maintenance_authorized_key.pub.tmp >> ~/.ssh/authorized_keys
-sort -u ~/.ssh/authorized_keys -o ~/.ssh/authorized_keys
+cp ~/.ssh/authorized_keys ~/.ssh/authorized_keys.new
+printf '\n' >> ~/.ssh/authorized_keys.new
+cat ~/.ssh/maintenance_authorized_key.pub.tmp >> ~/.ssh/authorized_keys.new
+printf '\n' >> ~/.ssh/authorized_keys.new
+mv ~/.ssh/authorized_keys.new ~/.ssh/authorized_keys
 rm -f ~/.ssh/maintenance_authorized_key.pub.tmp
 "@
 
