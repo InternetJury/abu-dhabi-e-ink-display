@@ -130,16 +130,23 @@ if (-not (Test-Path -LiteralPath $publisherKey)) {
 
 # The publisher task runs as SYSTEM. Windows OpenSSH rejects a private key when
 # another interactive account can read it, even when that account created it.
-foreach ($arguments in @(
-    @($publisherKey, "/inheritance:r"),
-    @($publisherKey, "/setowner", "SYSTEM"),
-    @($publisherKey, "/grant:r", "SYSTEM:F", "BUILTIN\Administrators:F")
-)) {
-    Invoke-CheckedCommand `
-        -FilePath "icacls.exe" `
-        -Arguments $arguments `
-        -Description "Publisher private-key ACL update"
+$publisherKeyAcl = Get-Acl -LiteralPath $publisherKey
+$publisherKeyAcl.SetAccessRuleProtection($true, $false)
+foreach ($rule in @($publisherKeyAcl.Access)) {
+    $publisherKeyAcl.RemoveAccessRuleAll($rule)
 }
+$systemSid = New-Object Security.Principal.SecurityIdentifier("S-1-5-18")
+$administratorsSid = New-Object Security.Principal.SecurityIdentifier("S-1-5-32-544")
+$publisherKeyAcl.SetOwner($systemSid)
+foreach ($sid in @($systemSid, $administratorsSid)) {
+    $rule = New-Object Security.AccessControl.FileSystemAccessRule(
+        $sid,
+        [Security.AccessControl.FileSystemRights]::FullControl,
+        [Security.AccessControl.AccessControlType]::Allow
+    )
+    $publisherKeyAcl.AddAccessRule($rule)
+}
+Set-Acl -LiteralPath $publisherKey -AclObject $publisherKeyAcl
 
 if (-not (Test-Path $appDir)) {
     Write-Host "Cloning project into $appDir..."

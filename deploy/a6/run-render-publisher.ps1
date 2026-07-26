@@ -49,18 +49,26 @@ function Repair-PublisherIdentityAcl {
     }
 
     # OpenSSH rejects a private key when an interactive account can read it.
-    # Repair this on every SYSTEM task start so reinstalls cannot silently stop
-    # frame delivery while local rendering continues to look healthy.
-    foreach ($arguments in @(
-        @($IdentityFile, "/inheritance:r"),
-        @($IdentityFile, "/setowner", "SYSTEM"),
-        @($IdentityFile, "/grant:r", "SYSTEM:F", "BUILTIN\Administrators:F")
-    )) {
-        & icacls.exe @arguments | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-            throw "Failed to secure publisher identity $IdentityFile with icacls exit code $LASTEXITCODE."
-        }
+    # Rebuild the ACL instead of using icacls /grant:r, which replaces only the
+    # named principal and silently leaves unrelated user grants in place.
+    $acl = Get-Acl -LiteralPath $IdentityFile
+    $acl.SetAccessRuleProtection($true, $false)
+    foreach ($rule in @($acl.Access)) {
+        $acl.RemoveAccessRuleAll($rule)
     }
+
+    $systemSid = New-Object Security.Principal.SecurityIdentifier("S-1-5-18")
+    $administratorsSid = New-Object Security.Principal.SecurityIdentifier("S-1-5-32-544")
+    $acl.SetOwner($systemSid)
+    foreach ($sid in @($systemSid, $administratorsSid)) {
+        $rule = New-Object Security.AccessControl.FileSystemAccessRule(
+            $sid,
+            [Security.AccessControl.FileSystemRights]::FullControl,
+            [Security.AccessControl.AccessControlType]::Allow
+        )
+        $acl.AddAccessRule($rule)
+    }
+    Set-Acl -LiteralPath $IdentityFile -AclObject $acl
 }
 
 Repair-PublisherIdentityAcl

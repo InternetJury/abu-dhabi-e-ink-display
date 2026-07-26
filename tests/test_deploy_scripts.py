@@ -45,7 +45,9 @@ def test_a6_publisher_preserves_render_time_and_enforces_end_to_end_deadline():
     assert "last-successful-publish.txt" in script
     assert "Repair-PublisherIdentityAcl" in script
     assert 'S-1-5-18' in script
-    assert '"SYSTEM:F", "BUILTIN\\Administrators:F"' in script
+    assert 'S-1-5-32-544' in script
+    assert 'SetAccessRuleProtection($true, $false)' in script
+    assert 'Set-Acl -LiteralPath $IdentityFile' in script
 
 
 def test_a6_installer_registers_publisher_watchdog():
@@ -65,9 +67,9 @@ def test_a6_installer_registers_publisher_watchdog():
     assert "publisher_ed25519" in script
     assert "publisher_known_hosts" in script
     assert "PLAYWRIGHT_BROWSERS_PATH" in script
-    assert '"/setowner", "SYSTEM"' in script
-    assert '"/grant:r", "SYSTEM:F", "BUILTIN\\Administrators:F"' in script
-    assert 'Publisher private-key ACL update' in script
+    assert 'S-1-5-18' in script
+    assert 'S-1-5-32-544' in script
+    assert 'Set-Acl -LiteralPath $publisherKey' in script
 
 
 def test_a6_ssh_repair_persists_for_tailscale_and_local_networks():
