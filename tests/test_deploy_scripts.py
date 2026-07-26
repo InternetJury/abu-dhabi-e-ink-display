@@ -54,6 +54,7 @@ def test_a6_publisher_has_fixed_read_only_pi_maintenance_status_flow():
     assert "journalctl -u ad-eink-display.service" in script
     assert "ssh-keygen -lf ~/.ssh/authorized_keys" in script
     assert "Export-OneTimeMaintenanceStatus" in script
+    assert script.index("    try {") < script.rindex("        Export-OneTimeMaintenanceStatus")
 
 
 def test_a6_publisher_preserves_render_time_and_enforces_end_to_end_deadline():

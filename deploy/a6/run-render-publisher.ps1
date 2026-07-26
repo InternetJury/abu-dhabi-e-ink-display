@@ -373,11 +373,10 @@ if (-not $SkipPublish -and -not (Test-Path -LiteralPath $IdentityFile)) {
     throw "Publisher SSH key not found at $IdentityFile. Run deploy\a6\install-a6.ps1 first."
 }
 
-Install-OneTimeMaintenanceKey
-Export-OneTimeMaintenanceStatus
-
 do {
     try {
+        Install-OneTimeMaintenanceKey
+        Export-OneTimeMaintenanceStatus
         Invoke-StorageCleanup
         Wait-UntilNextRenderSlot
 
