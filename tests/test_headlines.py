@@ -101,3 +101,34 @@ def test_reuters_search_feed_defaults_to_global_until_title_proves_regional_rele
     profile = RSSHeadlineProvider._build_profiles(("https://news.google.com/rss/search?q=site:reuters.com",))[0]
 
     assert profile.region == "global"
+
+
+def test_headline_selection_drops_low_signal_local_india_story():
+    candidates = [
+        HeadlineCandidate(
+            item=HeadlineItem(
+                title="Govt firm on 50% merit quota for Pharm D admissions: Minister",
+                source_name="The Hindu",
+                url="https://www.thehindu.com/example",
+                published_at=datetime(2026, 7, 26, 16, 0, tzinfo=TZ),
+            ),
+            region="india",
+            priority=2,
+        ),
+        HeadlineCandidate(
+            item=HeadlineItem(
+                title="India finance minister says budget has buffers to absorb inflation risks",
+                source_name="Reuters",
+                url="https://www.reuters.com/example",
+                published_at=datetime(2026, 7, 26, 15, 0, tzinfo=TZ),
+            ),
+            region="india",
+            priority=1,
+        ),
+    ]
+
+    selected = RSSHeadlineProvider._select_headlines(candidates, limit=2)
+
+    assert [item.title for item in selected] == [
+        "India finance minister says budget has buffers to absorb inflation risks"
+    ]

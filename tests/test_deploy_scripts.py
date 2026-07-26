@@ -32,6 +32,15 @@ def test_a6_publisher_uses_dedicated_noninteractive_ssh_identity():
     assert '"IdentitiesOnly=yes"' in script
     assert '"StrictHostKeyChecking=accept-new"' in script
     assert '"UserKnownHostsFile=$KnownHostsFile"' in script
+
+
+def test_a6_publisher_can_install_a_valid_one_time_maintenance_key():
+    script = (REPO_ROOT / "deploy" / "a6" / "run-render-publisher.ps1").read_text()
+
+    assert 'Join-Path $framesDir "maintenance_authorized_key.pub"' in script
+    assert "^ssh-ed25519 [A-Za-z0-9+/]+={0,3}( [A-Za-z0-9_.@-]+)?$" in script
+    assert 'grep -qxF -- "`$maintenanceKey"' in script
+    assert "Remove-Item -LiteralPath $maintenanceKeyHandoff" in script
     assert "Publisher SSH key not found" in script
 
 

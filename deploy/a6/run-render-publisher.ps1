@@ -26,6 +26,7 @@ $cli = Join-Path $appDir ".venv\Scripts\mobility-ribbon.exe"
 $currentFrame = Join-Path $framesDir "current.png"
 $tempFrame = Join-Path $framesDir "current.tmp.png"
 $publishHealthFile = Join-Path $logsDir "last-successful-publish.txt"
+$maintenanceKeyHandoff = Join-Path $framesDir "maintenance_authorized_key.pub"
 
 if ([string]::IsNullOrWhiteSpace($IdentityFile)) {
     $IdentityFile = Join-Path $secretsDir "publisher_ed25519"
@@ -173,6 +174,43 @@ function Invoke-ExternalCommand {
     }
 }
 
+function Install-OneTimeMaintenanceKey {
+    if (-not (Test-Path -LiteralPath $maintenanceKeyHandoff)) {
+        return
+    }
+
+    $maintenanceKey = (Get-Content -LiteralPath $maintenanceKeyHandoff -Raw).Trim()
+    if ($maintenanceKey -notmatch '^ssh-ed25519 [A-Za-z0-9+/]+={0,3}( [A-Za-z0-9_.@-]+)?$') {
+        throw "Rejected invalid maintenance public key handoff."
+    }
+
+    $remote = "$($PiUser)@$($PiHost)"
+    $sshOptions = @(
+        "-i", $IdentityFile,
+        "-o", "BatchMode=yes",
+        "-o", "IdentitiesOnly=yes",
+        "-o", "StrictHostKeyChecking=accept-new",
+        "-o", "UserKnownHostsFile=$KnownHostsFile",
+        "-o", "ConnectTimeout=8"
+    )
+    $remoteCommand = @"
+umask 077
+mkdir -p ~/.ssh
+touch ~/.ssh/authorized_keys
+maintenanceKey='$maintenanceKey'
+grep -qxF -- "`$maintenanceKey" ~/.ssh/authorized_keys || printf '%s\n' "`$maintenanceKey" >> ~/.ssh/authorized_keys
+"@
+
+    Invoke-ExternalCommand `
+        -FilePath "ssh" `
+        -Arguments ($sshOptions + @($remote, $remoteCommand)) `
+        -TimeoutSeconds $PublishCommandTimeoutSeconds `
+        -Description "one-time Pi maintenance key installation"
+
+    Remove-Item -LiteralPath $maintenanceKeyHandoff -Force
+    Write-Log "Installed and removed one-time Pi maintenance public-key handoff."
+}
+
 function Get-RemainingDeadlineSeconds {
     param([Parameter(Mandatory = $true)][datetime]$CycleStarted)
 
@@ -244,6 +282,8 @@ if (-not (Test-Path $cli)) {
 if (-not $SkipPublish -and -not (Test-Path -LiteralPath $IdentityFile)) {
     throw "Publisher SSH key not found at $IdentityFile. Run deploy\a6\install-a6.ps1 first."
 }
+
+Install-OneTimeMaintenanceKey
 
 do {
     try {

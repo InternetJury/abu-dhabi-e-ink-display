@@ -16,7 +16,7 @@ from ribbon.settings import SETTINGS
 
 
 LOCAL_TZ = ZoneInfo(SETTINGS.timezone)
-CACHE_VERSION = 4
+CACHE_VERSION = 5
 
 
 @dataclass(frozen=True)
@@ -122,6 +122,25 @@ INDIA_KEYWORDS = (
     "supreme court",
     "parliament",
     "defence",
+)
+
+INDIA_HIGH_SIGNAL_KEYWORDS = (
+    "india",
+    "new delhi",
+    "prime minister",
+    "finance minister",
+    "supreme court",
+    "parliament",
+    "reserve bank",
+    "rbi",
+    "national security",
+    "defence",
+    "election",
+    "budget",
+    "economy",
+    "inflation",
+    "foreign policy",
+    "trade",
 )
 
 UAE_KEYWORDS = (
@@ -314,8 +333,18 @@ class RSSHeadlineProvider(HeadlineProvider):
         return (significance_rank, candidate.priority, source_rank, -published)
 
     @classmethod
+    def _is_high_signal_india_candidate(cls, candidate: HeadlineCandidate) -> bool:
+        if candidate.region != "india":
+            return True
+        title_norm = cls._normalize_text(candidate.item.title)
+        return any(keyword in title_norm for keyword in INDIA_HIGH_SIGNAL_KEYWORDS)
+
+    @classmethod
     def _select_headlines(cls, candidates: list[HeadlineCandidate], limit: int) -> list[HeadlineItem]:
-        ranked = sorted(candidates, key=cls._candidate_score)
+        ranked = sorted(
+            (candidate for candidate in candidates if cls._is_high_signal_india_candidate(candidate)),
+            key=cls._candidate_score,
+        )
         selected: list[HeadlineCandidate] = []
         used_titles: set[str] = set()
 
