@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here.
 
+## [Unreleased]
+
+### Fixed
+
+- close each decoded PNG source and processed image so the always-on Pi display client cannot exhaust file descriptors
+- terminate on descriptor exhaustion or repeated display-loop failures so `systemd` can restart with a startup clear and full refresh
+- resolve and locally cache the Pi IPv4 target on the A6 to avoid intermittent `.local`/mDNS failures in the Windows `SYSTEM` publisher task
+
 ## [0.2.0] - 2026-07-26
 
 ### Added

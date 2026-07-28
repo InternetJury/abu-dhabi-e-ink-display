@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import errno
 import os
 import sys
 import types
@@ -59,6 +60,63 @@ def make_args(**overrides):
 
 def write_frame(path: Path) -> None:
     Image.new("1", (1360, 480), 255).save(path)
+
+
+def test_load_frame_closes_png_source_and_returns_detached_copy(monkeypatch, tmp_path: Path):
+    frame_path = tmp_path / "current.png"
+    frame_path.touch()
+    detached = Image.new("1", (1360, 480), 255)
+
+    class TrackingSource:
+        size = (1360, 480)
+        closed = False
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, _exc_type, _exc, _traceback):
+            self.closed = True
+
+        def load(self):
+            return None
+
+        def copy(self):
+            return detached
+
+    source = TrackingSource()
+    monkeypatch.setattr(display_current.Image, "open", lambda _path: source)
+
+    loaded = display_current.load_frame(frame_path, 1360, 480)
+
+    assert loaded is detached
+    assert source.closed is True
+
+
+def test_load_frame_closes_png_source_when_dimensions_are_invalid(monkeypatch, tmp_path: Path):
+    frame_path = tmp_path / "current.png"
+    frame_path.touch()
+
+    class TrackingSource:
+        size = (100, 100)
+        closed = False
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, _exc_type, _exc, _traceback):
+            self.closed = True
+
+    source = TrackingSource()
+    monkeypatch.setattr(display_current.Image, "open", lambda _path: source)
+
+    try:
+        display_current.load_frame(frame_path, 1360, 480)
+    except ValueError as exc:
+        assert "Expected 1360x480" in str(exc)
+    else:
+        raise AssertionError("invalid frame dimensions unexpectedly passed")
+
+    assert source.closed is True
 
 
 def test_stale_frame_does_not_open_or_power_display(tmp_path: Path):
@@ -150,6 +208,77 @@ def test_first_fresh_frame_opens_clears_and_forces_full_refresh(tmp_path: Path):
     assert driver.clear_calls == 1
     assert driver.display_calls == [True]
     assert state.startup_full_refreshes_remaining == 0
+
+
+def test_processed_frame_is_closed_after_display(monkeypatch, tmp_path: Path):
+    frame = tmp_path / "current.png"
+    write_frame(frame)
+    os.utime(frame, (995.0, 995.0))
+    driver = FakeDriver()
+    state = display_current.DisplayState(startup_full_refreshes_remaining=1)
+
+    class TrackingFrame:
+        close_calls = 0
+
+        def close(self):
+            self.close_calls += 1
+
+    loaded = TrackingFrame()
+    monkeypatch.setattr(display_current, "load_frame", lambda *_args: loaded)
+
+    displayed = display_current.process_frame_once(
+        frame,
+        driver,
+        make_args(),
+        state,
+        wall_time=lambda: 1000.0,
+        monotonic=lambda: 20.0,
+        sleeper=lambda _seconds: None,
+    )
+
+    assert displayed is True
+    assert loaded.close_calls == 1
+
+
+def test_display_loop_exits_for_systemd_restart_on_file_descriptor_exhaustion(monkeypatch, tmp_path: Path):
+    driver = FakeDriver()
+    state = display_current.DisplayState()
+
+    class FakeLock:
+        acquired = False
+        released = False
+
+        def acquire(self):
+            self.acquired = True
+
+        def release(self):
+            self.released = True
+
+    process_lock = FakeLock()
+    attempts = 0
+
+    def fail_with_emfile(*_args, **_kwargs):
+        nonlocal attempts
+        attempts += 1
+        raise OSError(errno.EMFILE, "Too many open files")
+
+    monkeypatch.setattr(display_current, "process_frame_once", fail_with_emfile)
+    monkeypatch.setattr(display_current.time, "sleep", lambda _seconds: None)
+    args = make_args(once=False, poll_seconds=1.0, hardware_idle_seconds=90.0, max_consecutive_errors=5)
+
+    exit_code = display_current.run_display_loop(
+        tmp_path / "current.png",
+        driver,
+        args,
+        state,
+        process_lock,
+    )
+
+    assert exit_code == 1
+    assert attempts == 1
+    assert process_lock.acquired is True
+    assert process_lock.released is True
+    assert driver.close_calls == 1
 
 
 def test_first_full_display_initializes_panel_exactly_once(monkeypatch):

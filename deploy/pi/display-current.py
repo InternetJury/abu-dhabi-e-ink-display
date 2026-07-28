@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+import errno
 import hashlib
 import importlib
 import inspect
@@ -331,6 +332,8 @@ def process_frame_once(
         state.startup_prepared = False
         state.startup_full_refreshes_remaining = max(1, state.startup_full_refreshes_remaining)
         raise
+    finally:
+        image.close()
 
 
 def close_idle_driver(
@@ -365,10 +368,55 @@ def configure_logging(log_file: Path | None, max_bytes: int, backup_count: int) 
 
 
 def load_frame(path: Path, width: int, height: int) -> Image.Image:
-    image = Image.open(path)
-    if image.size != (width, height):
-        raise ValueError(f"Expected {width}x{height}, got {image.size[0]}x{image.size[1]}")
-    return image
+    # Pillow keeps the source file descriptor open while an image remains lazy.
+    # Detach the decoded pixels so a minute-by-minute service cannot exhaust FDs.
+    with Image.open(path) as source:
+        if source.size != (width, height):
+            raise ValueError(f"Expected {width}x{height}, got {source.size[0]}x{source.size[1]}")
+        source.load()
+        return source.copy()
+
+
+def is_resource_exhaustion(exc: Exception) -> bool:
+    return isinstance(exc, OSError) and exc.errno in {errno.EMFILE, errno.ENFILE}
+
+
+def run_display_loop(
+    frame_path: Path,
+    driver: EInkDriver,
+    args,
+    state: DisplayState,
+    process_lock: ProcessLock,
+    *,
+    stop_requested: Callable[[], bool] = lambda: False,
+) -> int:
+    """Run the display loop and exit on persistent faults so systemd can recover."""
+    consecutive_errors = 0
+    process_lock.acquire()
+    try:
+        while not stop_requested():
+            try:
+                process_frame_once(frame_path, driver, args, state)
+                close_idle_driver(driver, state, args.hardware_idle_seconds)
+                consecutive_errors = 0
+            except Exception as exc:
+                consecutive_errors += 1
+                logging.exception("Display update failed: %s", exc)
+                if is_resource_exhaustion(exc) or consecutive_errors >= args.max_consecutive_errors:
+                    logging.critical(
+                        "Stopping display client after %s consecutive error(s) so the service manager can restart it.",
+                        consecutive_errors,
+                    )
+                    return 1
+
+            if args.once:
+                break
+            time.sleep(args.poll_seconds)
+    finally:
+        driver.close()
+        process_lock.release()
+
+    return 0
 
 
 def main() -> int:
@@ -432,6 +480,12 @@ def main() -> int:
     parser.add_argument("--log-file", default="/var/log/abu-dhabi-eink/display-current.log")
     parser.add_argument("--log-max-bytes", type=int, default=1024 * 1024)
     parser.add_argument("--log-backups", type=int, default=3)
+    parser.add_argument(
+        "--max-consecutive-errors",
+        type=int,
+        default=5,
+        help="Exit after this many consecutive display-loop errors so systemd can restart the client.",
+    )
     args = parser.parse_args()
 
     configure_logging(Path(args.log_file) if args.log_file else None, args.log_max_bytes, args.log_backups)
@@ -456,23 +510,14 @@ def main() -> int:
     signal.signal(signal.SIGTERM, request_stop)
     signal.signal(signal.SIGINT, request_stop)
 
-    process_lock.acquire()
-    try:
-        while not stop_requested:
-            try:
-                process_frame_once(frame_path, driver, args, state)
-                close_idle_driver(driver, state, args.hardware_idle_seconds)
-            except Exception as exc:
-                logging.exception("Display update failed: %s", exc)
-
-            if args.once:
-                break
-            time.sleep(args.poll_seconds)
-    finally:
-        driver.close()
-        process_lock.release()
-
-    return 0
+    return run_display_loop(
+        frame_path,
+        driver,
+        args,
+        state,
+        process_lock,
+        stop_requested=lambda: stop_requested,
+    )
 
 
 if __name__ == "__main__":

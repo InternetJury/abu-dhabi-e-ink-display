@@ -29,6 +29,7 @@ $publishHealthFile = Join-Path $logsDir "last-successful-publish.txt"
 $maintenanceKeyHandoff = Join-Path $framesDir "maintenance_authorized_key.pub"
 $maintenanceStatusRequest = Join-Path $framesDir "maintenance-status.request"
 $maintenanceStatusOutput = Join-Path $framesDir "maintenance-status.txt"
+$piAddressCache = Join-Path $logsDir "last-pi-ip.txt"
 
 if ([string]::IsNullOrWhiteSpace($IdentityFile)) {
     $IdentityFile = Join-Path $secretsDir "publisher_ed25519"
@@ -115,6 +116,43 @@ function Write-Log {
     Write-Host $line
 }
 
+function Resolve-PiTarget {
+    $parsedAddress = $null
+    if (
+        [Net.IPAddress]::TryParse($PiHost, [ref]$parsedAddress) -and
+        $parsedAddress.AddressFamily -eq [Net.Sockets.AddressFamily]::InterNetwork
+    ) {
+        return $PiHost
+    }
+
+    try {
+        $resolvedAddress = [Net.Dns]::GetHostAddresses($PiHost) |
+            Where-Object { $_.AddressFamily -eq [Net.Sockets.AddressFamily]::InterNetwork } |
+            Select-Object -First 1
+        if ($null -ne $resolvedAddress) {
+            $target = $resolvedAddress.ToString()
+            Set-Content -LiteralPath $piAddressCache -Value $target
+            return $target
+        }
+    }
+    catch {
+        # The SYSTEM account can intermittently lose .local/mDNS resolution.
+    }
+
+    if (Test-Path -LiteralPath $piAddressCache) {
+        $cachedTarget = (Get-Content -LiteralPath $piAddressCache -Raw).Trim()
+        $cachedAddress = $null
+        if (
+            [Net.IPAddress]::TryParse($cachedTarget, [ref]$cachedAddress) -and
+            $cachedAddress.AddressFamily -eq [Net.Sockets.AddressFamily]::InterNetwork
+        ) {
+            return $cachedTarget
+        }
+    }
+
+    return $PiHost
+}
+
 function ConvertTo-ArgumentString {
     param([Parameter(Mandatory = $true)][string[]]$Arguments)
 
@@ -186,8 +224,9 @@ function Install-OneTimeMaintenanceKey {
         throw "Rejected invalid maintenance public key handoff."
     }
 
-    $remote = "$($PiUser)@$($PiHost)"
+    $remote = "$($PiUser)@$(Resolve-PiTarget)"
     $sshOptions = @(
+        "-4",
         "-i", $IdentityFile,
         "-o", "BatchMode=yes",
         "-o", "IdentitiesOnly=yes",
@@ -196,6 +235,7 @@ function Install-OneTimeMaintenanceKey {
         "-o", "ConnectTimeout=8"
     )
     $scpOptions = @(
+        "-4",
         "-q",
         "-i", $IdentityFile,
         "-o", "BatchMode=yes",
@@ -243,12 +283,13 @@ function Export-OneTimeMaintenanceStatus {
         return
     }
 
-    $remote = "$($PiUser)@$($PiHost)"
+    $remote = "$($PiUser)@$(Resolve-PiTarget)"
     $remoteStatus = "/var/lib/abu-dhabi-eink/maintenance-status.txt"
     $remoteExporter = "/var/lib/abu-dhabi-eink/export-maintenance-status.sh"
     $localExporter = Join-Path $appDir "deploy\pi\export-maintenance-status.sh"
     $localExporterLf = Join-Path $framesDir "export-maintenance-status.tmp.sh"
     $sshOptions = @(
+        "-4",
         "-i", $IdentityFile,
         "-o", "BatchMode=yes",
         "-o", "IdentitiesOnly=yes",
@@ -257,6 +298,7 @@ function Export-OneTimeMaintenanceStatus {
         "-o", "ConnectTimeout=8"
     )
     $scpOptions = @(
+        "-4",
         "-q",
         "-i", $IdentityFile,
         "-o", "BatchMode=yes",
@@ -326,8 +368,9 @@ function Publish-Frame {
 
     $remoteDir = Split-Path -Parent $RemotePath
     $remoteTmp = "$RemotePath.tmp"
-    $remote = "$($PiUser)@$($PiHost)"
+    $remote = "$($PiUser)@$(Resolve-PiTarget)"
     $sshOptions = @(
+        "-4",
         "-i", $IdentityFile,
         "-o", "BatchMode=yes",
         "-o", "IdentitiesOnly=yes",
@@ -338,6 +381,7 @@ function Publish-Frame {
         "-o", "ServerAliveCountMax=2"
     )
     $scpOptions = @(
+        "-4",
         "-q",
         "-i", $IdentityFile,
         "-o", "BatchMode=yes",

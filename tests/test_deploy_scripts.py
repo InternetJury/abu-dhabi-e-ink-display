@@ -34,6 +34,15 @@ def test_a6_publisher_uses_dedicated_noninteractive_ssh_identity():
     assert '"UserKnownHostsFile=$KnownHostsFile"' in script
 
 
+def test_a6_publisher_resolves_and_caches_ipv4_for_system_task_mdns_failures():
+    script = (REPO_ROOT / "deploy" / "a6" / "run-render-publisher.ps1").read_text()
+
+    assert "function Resolve-PiTarget" in script
+    assert 'Join-Path $logsDir "last-pi-ip.txt"' in script
+    assert "AddressFamily -eq [Net.Sockets.AddressFamily]::InterNetwork" in script
+    assert '"-4"' in script
+
+
 def test_a6_publisher_can_install_a_valid_one_time_maintenance_key():
     script = (REPO_ROOT / "deploy" / "a6" / "run-render-publisher.ps1").read_text()
 
